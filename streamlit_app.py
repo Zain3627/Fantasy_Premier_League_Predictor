@@ -97,7 +97,10 @@ with st.sidebar:
     3. Click 'Generate Predictions'
     4. Wait for results to download
     """)
+    loader = dl.DataLoader()
 
+    deadlines = loader.load_data_api('https://fantasy.premierleague.com/api/bootstrap-static/','events')
+    finished_gw = dp.DataPreprocessing().get_current_gw(deadlines) - 1
 # Main content area
 col1, col2, col3 = st.columns([1, 2, 1])
 
@@ -110,18 +113,18 @@ with col2:
     with col_input1:
         start_gw = st.number_input(
             "Start Gameweek",
-            min_value=1,
+            min_value=finished_gw+1,
             max_value=38,
-            value=4,
+            value=finished_gw+1,
             help="Enter the starting gameweek number (1-38)"
         )
     
     with col_input2:
         end_gw = st.number_input(
             "End Gameweek", 
-            min_value=1,
+            min_value=finished_gw+1,
             max_value=38,
-            value=6,
+            value=finished_gw+4,
             help="Enter the ending gameweek number (1-38)"
         )
     
@@ -138,7 +141,6 @@ with col2:
                 # Initialize the pipeline if not already done
                 if not st.session_state.pipeline_initialized:
                     try:
-                        loader = dl.DataLoader()
                         preprocessor = dp.DataPreprocessing()
                         goalkeeper_model = fm.FantasyModel(1)
                         defender_model = fm.FantasyModel(2)
