@@ -114,7 +114,7 @@ with col2:
         start_gw = st.number_input(
             "Start Gameweek",
             min_value=finished_gw+1,
-            max_value=38,
+            max_value=min(finished_gw+5,38),
             value=finished_gw+1,
             help="Enter the starting gameweek number (1-38)"
         )
@@ -123,7 +123,7 @@ with col2:
         end_gw = st.number_input(
             "End Gameweek", 
             min_value=finished_gw+1,
-            max_value=max(finished_gw+5,38),
+            max_value=min(finished_gw+5,38),
             value=finished_gw+3,
             help="Enter the ending gameweek number (1-38)"
         )
