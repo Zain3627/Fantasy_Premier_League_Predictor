@@ -123,8 +123,8 @@ with col2:
         end_gw = st.number_input(
             "End Gameweek", 
             min_value=finished_gw+1,
-            max_value=38,
-            value=finished_gw+4,
+            max_value=max(finished_gw+5,38),
+            value=finished_gw+3,
             help="Enter the ending gameweek number (1-38)"
         )
     

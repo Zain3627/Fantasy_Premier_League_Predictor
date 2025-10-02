@@ -316,33 +316,35 @@ class FantasyPredicorPipeline:
 
         player_stats = self.preprocessor.players_processing(player_stats)
 
-        history = pd.DataFrame()
-        avg_points_list = []
-        for _, p in player_stats.iterrows():
-            pid = p["id"]
-            url = f"https://fantasy.premierleague.com/api/element-summary/{pid}/"
-            one_history = self.loader.load_data_api(url, 'history')
-            past_seasons = self.loader.load_data_api(url, 'history_past')
+        # history = pd.DataFrame()
+        # avg_points_list = []
+        # for _, p in player_stats.iterrows():
+        #     pid = p["id"]
+        #     url = f"https://fantasy.premierleague.com/api/element-summary/{pid}/"
+        #     one_history = self.loader.load_data_api(url, 'history')
+        #     past_seasons = self.loader.load_data_api(url, 'history_past')
 
-            avg_points_last_3y = 0
-            if past_seasons is not None and len(past_seasons) > 0:
-                past_seasons_df = pd.DataFrame(past_seasons)
-                past_seasons_df = past_seasons_df.sort_values("season_name", ascending=False).head(3)
-                avg_points_last_3y = past_seasons_df["total_points"].mean()
+        #     avg_points_last_3y = 0
+        #     if past_seasons is not None and len(past_seasons) > 0:
+        #         past_seasons_df = pd.DataFrame(past_seasons)
+        #         past_seasons_df = past_seasons_df.sort_values("season_name", ascending=False).head(3)
+        #         avg_points_last_3y = past_seasons_df["total_points"].mean()
 
-            avg_points_list.append({"id": pid, "avg_points_last_3y": avg_points_last_3y})
-            history = pd.concat([history, one_history], ignore_index=True)
-            print(f'load player {player_stats['web_name'][player_stats['id']==pid]}')
+        #     avg_points_list.append({"id": pid, "avg_points_last_3y": avg_points_last_3y})
+        #     history = pd.concat([history, one_history], ignore_index=True)
+        #     print(f'load player {player_stats['web_name'][player_stats['id']==pid]}')
 
-        avg_points_df = pd.DataFrame(avg_points_list)
-        history = pd.merge(history,avg_points_df, left_on='element', right_on="id", how="left")
+        # avg_points_df = pd.DataFrame(avg_points_list)
+        # history = pd.merge(history,avg_points_df, left_on='element', right_on="id", how="left")
 
-        # history = pd.read_csv('all_players_neeew.csv') 
+        history = pd.read_csv('all_players_neeew.csv') 
+        # history.to_csv("all_players_neeew.csv",index=False)
         history.drop(columns=['id'], inplace=True)
 
         player_stats = pd.merge(player_stats, history, left_on="id", right_on="element", how="inner")
         df,goalkeepers,defenders,midfielders,forwards = self.preprocessor.divide_by_position(player_stats)
         self.full_players = df
+        df.to_csv(f"{output_dir}/all_players.csv",index=False)
 
         self.team_stats = self.preprocessor.teams_processing(self.team_stats)
 
@@ -404,7 +406,7 @@ class FantasyPredicorPipeline:
                 final_df = final_df.sort_values(by='total_points', ascending=False)
 
                 # Save to CSV and store in dictionary
-                # final_df.to_csv(f"{output_dir}/{position_name}_gw{gw_start}_to_gw{gw_end}.csv", index=False)
+                final_df.to_csv(f"{output_dir}/{position_name}.csv", index=False)
                 position_dataframes[position_name] = final_df
             
         print(f"Pipeline completed")
