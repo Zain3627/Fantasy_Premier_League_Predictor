@@ -88,12 +88,17 @@ class DataPreprocessing:
         df = df.drop(columns=cols)
         return df
     
-    # def midfielder_preprocessing(self,df):
-    #     cols = ['kickoff_time']
-    #     df = df.drop(columns=cols)
-    #     return df
+    def stats_teams_prepocessing(self,df,f_a):
+        df.columns = ['_'.join(col).strip() for col in df.columns.values]
+        cols_drop = ['Unnamed: 1_level_0_# Pl','Unnamed: 2_level_0_Age','Playing Time_MP','Playing Time_Starts','Playing Time_Min','Playing Time_90s',
+                     'Performance_CrdY','Performance_CrdR','Expected_npxG','Expected_npxG+xAG','Progression_PrgC','Progression_PrgP','Performance_Ast','Performance_G+A','Performance_PK',
+                     'Expected_xAG','Per 90 Minutes_Ast','Per 90 Minutes_G+A','Per 90 Minutes_xAG','Per 90 Minutes_xG+xAG',
+                     'Per 90 Minutes_G-PK','Per 90 Minutes_G+A-PK','Per 90 Minutes_npxG','Per 90 Minutes_npxG+xAG']
+        df.drop(columns=cols_drop,inplace=True)
+
+        df.columns = ['Club','Possession','Goals scored','Non-penalty goals','Penalties','Expected goals','Goals/match','Expected goals/match']
+
+        print(df.info(),df.shape)
+
+        return df
     
-    # def forward_preprocessing(self,df):
-    #     cols = ['kickoff_time']
-    #     df = df.drop(columns=cols)
-    #     return df
