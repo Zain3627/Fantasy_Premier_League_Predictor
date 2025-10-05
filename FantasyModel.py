@@ -1,4 +1,3 @@
-from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -8,7 +7,7 @@ class FantasyModel:
         if position == 1:   # goalkeeper
             self.model = xgb.XGBRegressor(
                 n_estimators=1000,       # The number of boosting rounds or trees to build. More trees can be better but may lead to overfitting.
-                learning_rate=0.1,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
+                learning_rate=0.05,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
                 max_depth=8,             # The maximum depth of each tree. Deeper trees capture more complex patterns but are more likely to overfit.
                 subsample=0.8,           # The fraction of the training data to be randomly sampled for each tree. Prevents overfitting.
                 colsample_bytree=0.4,    # The fraction of features (columns) to be randomly sampled when building each tree.
@@ -38,7 +37,7 @@ class FantasyModel:
         else: # attackers and midfielders
             self.model = xgb.XGBRegressor(
                 n_estimators=1000,       # The number of boosting rounds or trees to build. More trees can be better but may lead to overfitting.
-                learning_rate=0.06,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
+                learning_rate=0.5,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
                 max_depth=8,             # The maximum depth of each tree. Deeper trees capture more complex patterns but are more likely to overfit.
                 subsample=0.5,           # The fraction of the training data to be randomly sampled for each tree. Prevents overfitting.
                 colsample_bytree=0.2,    # The fraction of features (columns) to be randomly sampled when building each tree.

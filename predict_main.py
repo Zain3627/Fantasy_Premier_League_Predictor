@@ -3,7 +3,6 @@ import DataPreprocessing as dp
 import FeatureEngineering as fe
 import FantasyPredicorPipeline as fpp
 import FantasyModel as fm
-import pandas as pd
 
 if __name__ == "__main__":
     loader = dl.DataLoader()

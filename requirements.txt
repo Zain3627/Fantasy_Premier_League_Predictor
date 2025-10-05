@@ -1,8 +1,9 @@
-streamlit
-scikit-learn
-pandas
-numpy
-xgboost
-requests
-selenium
-plotly
+numpy==2.3.3
+pandas==2.3.1
+plotly==6.3.0
+requests==2.32.5
+scikit-learn==1.7.2
+selenium==4.35.0
+streamlit==1.49.1
+xgboost==3.0.4
+azure-storage-blob

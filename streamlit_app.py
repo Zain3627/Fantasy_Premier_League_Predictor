@@ -1,53 +1,84 @@
 import streamlit as st
 import DataLoader as dl
 import DataPreprocessing as dp
-import FantasyPredicorPipeline as fpp
-import FantasyModel as fm
-import FeatureEngineering as fe
 import pandas as pd
 import time
-import os
 import plotly.express as px
-import plotly.graph_objects as go
+from azure.storage.blob import BlobServiceClient
+import io
 
 # Configure page
 st.set_page_config(
-    page_title="Fantasy Premier League Predictor",
+    page_title="FPL Vision",
     page_icon="⚽",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+st.markdown("""
+    <meta name="description" content="FPL Vision – AI-powered Fantasy Premier League predictions, player stats, and data insights for FPL managers.">
+    <meta name="keywords" content="FPL, Fantasy Premier League, football predictions, player stats, data analysis, Premier League, AI predictions, machine learning, fantasy football, FPL Vision">
+    <meta name="author" content="Zain Tamer">
+""", unsafe_allow_html=True)
+
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_predictions_data():
-    base_path = os.path.join(os.path.dirname(__file__), "predictions")
-    with st.spinner("📊 Loading cached stats data..."):
+    with st.spinner("📊 Loading cached prediction data from cloud..."):
         try:
-            positions = ['goalkeepers','defenders', 'midfielders', 'forwards']
-        # Dictionary to store the final dataframes
+            # ✅ Correct way to read from Streamlit secrets
+            connection_string = st.secrets["azure_storage_connection_string"]
+            container_name = "predictions"
+            
+            # Create a blob service client
+            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            
+            positions = ['goalkeepers', 'defenders', 'midfielders', 'forwards']
             position_dictionary = {}
             
             for position_name in positions:
-                csv_file_path = os.path.join(base_path, f"{position_name}.csv")
-                final_df = pd.read_csv(csv_file_path)
-                position_dictionary[position_name] = final_df
-            return position_dictionary
+                blob_name = f"{position_name}.csv"
+                blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
                 
+                # Download blob data directly into memory
+                stream_downloader = blob_client.download_blob()
+                data = stream_downloader.readall()
+                
+                # Read CSV into DataFrame
+                final_df = pd.read_csv(io.BytesIO(data))
+                position_dictionary[position_name] = final_df
+                
+            return position_dictionary
+
         except Exception as e:
-            st.error(f"❌ Error loading predictions data try again later")
+            st.error(f"❌ Error loading predictions data from cloud: {e}")
             return {}
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_stats(name):
-    base_path = os.path.join(os.path.dirname(__file__), "stats")
-    with st.spinner("📊 Loading cached stats data..."):
+    with st.spinner(f"📊 Loading cached {name} stats from cloud..."):
         try:
-            csv_file_path = os.path.join(base_path, f"{name}.csv")
-            final_df = pd.read_csv(csv_file_path)
+            # Get connection string from Streamlit secrets
+            connection_string = st.secrets["azure_storage_connection_string"]
+            container_name = "stats"
+            
+            # Create a blob service client
+            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            
+            blob_name = f"{name}.csv"
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+            
+            # Download blob data into a stream
+            stream_downloader = blob_client.download_blob()
+            stream = io.BytesIO()
+            stream_downloader.readinto(stream)
+            stream.seek(0) # Go to the start of the stream
+            
+            # Read the stream into a pandas DataFrame
+            final_df = pd.read_csv(stream)
             return final_df
 
         except Exception as e:
-            st.error(f"❌ Error loading predictions data try again later")
+            st.error(f"❌ Error loading stats data for '{name}' from cloud: {str(e)}")
             return pd.DataFrame()
 
 def create_dream_team(position_dictionary, finished_gw):
@@ -291,14 +322,21 @@ if 'pipeline_initialized' not in st.session_state:
     st.session_state.pipeline = None
 
 # Title and header
-st.markdown('<h1 class="title">⚽ Fantasy Premier League Predictor</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Predict player performance and analyze comprehensive statistics using advanced machine learning</p>', unsafe_allow_html=True)
+st.markdown('<h1 class="title">⚽ FPL Vision</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Your vision into Fantasy Premier League performance using advanced machine learning</p>', unsafe_allow_html=True)
 
 # Main navigation with session state to remember active tab
 tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team"]
 
-# Create tabs but track the active one
-main_tab1, main_tab2, main_tab3, main_tab4 = st.tabs(tab_names)
+# Use st.radio to control the active tab, and store it in session state
+st.session_state.active_tab = st.radio(
+    "Navigation", 
+    tab_names, 
+    horizontal=True, 
+    label_visibility="collapsed",
+    key="main_nav_radio",
+    index=tab_names.index(st.session_state.get('active_tab', "🎯 Predictions"))
+)
 
 # Sidebar for information
 with st.sidebar:
@@ -332,7 +370,7 @@ with st.sidebar:
         st.warning("Could not fetch current gameweek")
 
 # TAB 1: PREDICTIONS
-with main_tab1:
+if st.session_state.active_tab == "🎯 Predictions":
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
@@ -616,7 +654,7 @@ with main_tab1:
                         st.error(f"❌ Error during prediction: {str(e)}")
 
 # TAB 2: TEAM STATISTICS
-with main_tab2:
+elif st.session_state.active_tab == "🏟️ Team Statistics":
     st.markdown("## 🏟️ Team Performance Analysis")
     
     # Team stats overview
@@ -724,7 +762,7 @@ with main_tab2:
             st.markdown('</div>', unsafe_allow_html=True)
 
 # TAB 3: PLAYER STATISTICS
-with main_tab3:
+elif st.session_state.active_tab == "👤 Player Statistics":
     st.markdown("## 👤 Player Performance Analysis")
     
     # Position selector with updated titles and session state
@@ -742,21 +780,22 @@ with main_tab3:
         st.session_state.selected_feature = None
     if 'ascending_order' not in st.session_state:
         st.session_state.ascending_order = "Highest to Lowest"
+
+    # Callback to update session state when position changes
+    def update_player_stats_selection():
+        st.session_state.selected_position = st.session_state.position_selectbox
+        st.session_state.selected_feature = None  # Reset feature when position changes
     
     # Position selector with callback to update session state
     selected_position = st.selectbox(
         "Select Position", 
         list(position_stats.keys()),
         index=list(position_stats.keys()).index(st.session_state.selected_position),
-        key="position_selectbox"
+        key="position_selectbox",
+        on_change=update_player_stats_selection
     )
     
-    # Update session state when selection changes
-    if selected_position != st.session_state.selected_position:
-        st.session_state.selected_position = selected_position
-        st.session_state.selected_feature = None  # Reset feature when position changes
-    
-    selected_df = position_stats[selected_position]
+    selected_df = position_stats[st.session_state.selected_position]
     
     if not selected_df.empty:
         # Get numeric columns for ranking (exclude player name and team columns)
@@ -949,7 +988,7 @@ with main_tab3:
                 st.warning(f"No players found matching '{player_search}'")
 
 # TAB 4: DREAM TEAM
-with main_tab4:
+elif st.session_state.active_tab == "⭐ Dream Team":
     st.markdown("## ⭐ Dream Team Selection")
     st.markdown(f"### 🌟 Optimal Squad for Gameweek {finished_gw + 1} Based on Predicted Points")
     
@@ -1083,7 +1122,7 @@ st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #6c757d; padding: 20px;'>
-        <p>Fantasy Premier League Predictor v2.0 | Built with ❤️ and Streamlit</p>
+        <p>FPL Vision v2.0 | Built with ❤️ and Streamlit</p>
         <p>⚽ Good luck with your Fantasy team! ⚽</p>
     </div>
     """, 
