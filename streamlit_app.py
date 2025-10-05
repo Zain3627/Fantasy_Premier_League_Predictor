@@ -416,6 +416,13 @@ with main_tab1:
                         with tab1:
                             if 'goalkeepers' in position_dictionary:
                                 df_display = position_dictionary['goalkeepers'].copy()
+                                
+                                # Calculate total_points based on selected gameweeks
+                                gw_cols_to_sum = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                existing_gw_cols = [col for col in gw_cols_to_sum if col in df_display.columns]
+                                if existing_gw_cols:
+                                    df_display['total_points'] = df_display[existing_gw_cols].sum(axis=1)
+
                                 # Remove unwanted columns if they exist
                                 df_display = df_display.drop(columns=[col for col in columns_to_hide if col in df_display.columns])
                                 
@@ -428,23 +435,44 @@ with main_tab1:
                                     top_5 = df_sorted.head(5)
                                     
                                     for idx, (_, player) in enumerate(top_5.iterrows()):
-                                        col1, col2, col3 = st.columns([2, 1, 1])
-                                        with col1:
-                                            st.write(f"**#{idx+1} {player.iloc[0]}**")
-                                        with col2:
-                                            st.metric("Predicted Points", f"{player['total_points']:.1f}")
-                                        with col3:
-                                            if 'price' in df_display.columns:
-                                                st.metric("Price", f"£{player['price']:.1f}m")
-                                    
+                                        st.markdown(f"**#{idx+1} {player.iloc[0]}**")
+                                        cols = st.columns(2 + (end_gw - start_gw + 1))
+                                        cols[0].metric("Total Points", f"{player['total_points']:.1f}")
+                                        if 'price' in df_display.columns:
+                                            cols[1].metric("Price", f"£{player['price']:.1f}m")
+                                        
+                                        for i, gw in enumerate(range(start_gw, end_gw + 1)):
+                                            gw_col = f"gw_{gw}"
+                                            if gw_col in player:
+                                                cols[i+2].metric(f"GW {gw}", f"{player[gw_col]:.1f}")
+                                        st.markdown("---")
+
                                     st.markdown("#### 📊 All Goalkeepers")
-                                    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
+                                    
+                                    # Select columns to display
+                                    cols_to_show = [df_sorted.columns[0]] # Player name
+                                    if 'total_points' in df_sorted.columns:
+                                        cols_to_show.append('total_points')
+                                    if 'price' in df_sorted.columns:
+                                        cols_to_show.append('price')
+                                    
+                                    gw_cols = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                    cols_to_show.extend([col for col in gw_cols if col in df_sorted.columns])
+                                    
+                                    st.dataframe(df_sorted[cols_to_show], use_container_width=True, hide_index=True)
                                 else:
                                     st.dataframe(df_display, use_container_width=True, hide_index=True)
                         
                         with tab2:
                             if 'defenders' in position_dictionary:
                                 df_display = position_dictionary['defenders'].copy()
+
+                                # Calculate total_points based on selected gameweeks
+                                gw_cols_to_sum = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                existing_gw_cols = [col for col in gw_cols_to_sum if col in df_display.columns]
+                                if existing_gw_cols:
+                                    df_display['total_points'] = df_display[existing_gw_cols].sum(axis=1)
+
                                 # Remove unwanted columns if they exist
                                 df_display = df_display.drop(columns=[col for col in columns_to_hide if col in df_display.columns])
                                 
@@ -457,23 +485,44 @@ with main_tab1:
                                     top_5 = df_sorted.head(5)
                                     
                                     for idx, (_, player) in enumerate(top_5.iterrows()):
-                                        col1, col2, col3 = st.columns([2, 1, 1])
-                                        with col1:
-                                            st.write(f"**#{idx+1} {player.iloc[0]}**")
-                                        with col2:
-                                            st.metric("Predicted Points", f"{player['total_points']:.1f}")
-                                        with col3:
-                                            if 'price' in df_display.columns:
-                                                st.metric("Price", f"£{player['price']:.1f}m")
+                                        st.markdown(f"**#{idx+1} {player.iloc[0]}**")
+                                        cols = st.columns(2 + (end_gw - start_gw + 1))
+                                        cols[0].metric("Total Points", f"{player['total_points']:.1f}")
+                                        if 'price' in df_display.columns:
+                                            cols[1].metric("Price", f"£{player['price']:.1f}m")
+                                        
+                                        for i, gw in enumerate(range(start_gw, end_gw + 1)):
+                                            gw_col = f"gw_{gw}"
+                                            if gw_col in player:
+                                                cols[i+2].metric(f"GW {gw}", f"{player[gw_col]:.1f}")
+                                        st.markdown("---")
                                     
                                     st.markdown("#### 📊 All Defenders")
-                                    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
+                                    
+                                    # Select columns to display
+                                    cols_to_show = [df_sorted.columns[0]] # Player name
+                                    if 'total_points' in df_sorted.columns:
+                                        cols_to_show.append('total_points')
+                                    if 'price' in df_sorted.columns:
+                                        cols_to_show.append('price')
+                                    
+                                    gw_cols = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                    cols_to_show.extend([col for col in gw_cols if col in df_sorted.columns])
+
+                                    st.dataframe(df_sorted[cols_to_show], use_container_width=True, hide_index=True)
                                 else:
                                     st.dataframe(df_display, use_container_width=True, hide_index=True)
                         
                         with tab3:
                             if 'midfielders' in position_dictionary:
                                 df_display = position_dictionary['midfielders'].copy()
+
+                                # Calculate total_points based on selected gameweeks
+                                gw_cols_to_sum = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                existing_gw_cols = [col for col in gw_cols_to_sum if col in df_display.columns]
+                                if existing_gw_cols:
+                                    df_display['total_points'] = df_display[existing_gw_cols].sum(axis=1)
+
                                 # Remove unwanted columns if they exist
                                 df_display = df_display.drop(columns=[col for col in columns_to_hide if col in df_display.columns])
                                 
@@ -486,23 +535,44 @@ with main_tab1:
                                     top_5 = df_sorted.head(5)
                                     
                                     for idx, (_, player) in enumerate(top_5.iterrows()):
-                                        col1, col2, col3 = st.columns([2, 1, 1])
-                                        with col1:
-                                            st.write(f"**#{idx+1} {player.iloc[0]}**")
-                                        with col2:
-                                            st.metric("Predicted Points", f"{player['total_points']:.1f}")
-                                        with col3:
-                                            if 'price' in df_display.columns:
-                                                st.metric("Price", f"£{player['price']:.1f}m")
+                                        st.markdown(f"**#{idx+1} {player.iloc[0]}**")
+                                        cols = st.columns(2 + (end_gw - start_gw + 1))
+                                        cols[0].metric("Total Points", f"{player['total_points']:.1f}")
+                                        if 'price' in df_display.columns:
+                                            cols[1].metric("Price", f"£{player['price']:.1f}m")
+                                        
+                                        for i, gw in enumerate(range(start_gw, end_gw + 1)):
+                                            gw_col = f"gw_{gw}"
+                                            if gw_col in player:
+                                                cols[i+2].metric(f"GW {gw}", f"{player[gw_col]:.1f}")
+                                        st.markdown("---")
                                     
                                     st.markdown("#### 📊 All Midfielders")
-                                    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
+                                    
+                                    # Select columns to display
+                                    cols_to_show = [df_sorted.columns[0]] # Player name
+                                    if 'total_points' in df_sorted.columns:
+                                        cols_to_show.append('total_points')
+                                    if 'price' in df_sorted.columns:
+                                        cols_to_show.append('price')
+                                    
+                                    gw_cols = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                    cols_to_show.extend([col for col in gw_cols if col in df_sorted.columns])
+
+                                    st.dataframe(df_sorted[cols_to_show], use_container_width=True, hide_index=True)
                                 else:
                                     st.dataframe(df_display, use_container_width=True, hide_index=True)
                         
                         with tab4:
                             if 'forwards' in position_dictionary:
                                 df_display = position_dictionary['forwards'].copy()
+
+                                # Calculate total_points based on selected gameweeks
+                                gw_cols_to_sum = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                existing_gw_cols = [col for col in gw_cols_to_sum if col in df_display.columns]
+                                if existing_gw_cols:
+                                    df_display['total_points'] = df_display[existing_gw_cols].sum(axis=1)
+
                                 # Remove unwanted columns if they exist
                                 df_display = df_display.drop(columns=[col for col in columns_to_hide if col in df_display.columns])
                                 
@@ -515,17 +585,31 @@ with main_tab1:
                                     top_5 = df_sorted.head(5)
                                     
                                     for idx, (_, player) in enumerate(top_5.iterrows()):
-                                        col1, col2, col3 = st.columns([2, 1, 1])
-                                        with col1:
-                                            st.write(f"**#{idx+1} {player.iloc[0]}**")
-                                        with col2:
-                                            st.metric("Predicted Points", f"{player['total_points']:.1f}")
-                                        with col3:
-                                            if 'price' in df_display.columns:
-                                                st.metric("Price", f"£{player['price']:.1f}m")
+                                        st.markdown(f"**#{idx+1} {player.iloc[0]}**")
+                                        cols = st.columns(2 + (end_gw - start_gw + 1))
+                                        cols[0].metric("Total Points", f"{player['total_points']:.1f}")
+                                        if 'price' in df_display.columns:
+                                            cols[1].metric("Price", f"£{player['price']:.1f}m")
+                                        
+                                        for i, gw in enumerate(range(start_gw, end_gw + 1)):
+                                            gw_col = f"gw_{gw}"
+                                            if gw_col in player:
+                                                cols[i+2].metric(f"GW {gw}", f"{player[gw_col]:.1f}")
+                                        st.markdown("---")
                                     
                                     st.markdown("#### 📊 All Forwards")
-                                    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
+                                    
+                                    # Select columns to display
+                                    cols_to_show = [df_sorted.columns[0]] # Player name
+                                    if 'total_points' in df_sorted.columns:
+                                        cols_to_show.append('total_points')
+                                    if 'price' in df_sorted.columns:
+                                        cols_to_show.append('price')
+                                    
+                                    gw_cols = [f"gw_{gw}" for gw in range(start_gw, end_gw + 1)]
+                                    cols_to_show.extend([col for col in gw_cols if col in df_sorted.columns])
+
+                                    st.dataframe(df_sorted[cols_to_show], use_container_width=True, hide_index=True)
                                 else:
                                     st.dataframe(df_display, use_container_width=True, hide_index=True)
                     except Exception as e:
