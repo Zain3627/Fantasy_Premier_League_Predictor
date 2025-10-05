@@ -344,7 +344,6 @@ class FantasyPredicorPipeline:
         player_stats = pd.merge(player_stats, history, left_on="id", right_on="element", how="inner")
         df,goalkeepers,defenders,midfielders,forwards = self.preprocessor.divide_by_position(player_stats)
         self.full_players = df
-        df.to_csv(f"{output_dir}/all_players.csv",index=False)
 
         self.team_stats = self.preprocessor.teams_processing(self.team_stats)
 
@@ -410,8 +409,6 @@ class FantasyPredicorPipeline:
                 position_dataframes[position_name] = final_df
             
         print(f"Pipeline completed")
-        
-        # Return the dataframes for each position
-        return position_dataframes
+        return
 
     

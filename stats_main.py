@@ -11,5 +11,6 @@ if __name__ == "__main__":
 
     statsPipeline = sp.StatsPipeline(loader,preprocessor)
     statsPipeline.run()
+    print("Stats Pipeline completed successfully.")
 
 

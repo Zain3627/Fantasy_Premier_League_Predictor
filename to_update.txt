@@ -1,0 +1,4 @@
+Update predictions folder: run predict_main.py script
+Update stats folder: run stats_main.py script
+
+Update state of data on web app in the following line: st.success(f"Latest GW data update: **{7}**")

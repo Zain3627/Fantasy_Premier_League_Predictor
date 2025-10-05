@@ -88,17 +88,70 @@ class DataPreprocessing:
         df = df.drop(columns=cols)
         return df
     
-    def stats_teams_prepocessing(self,df,f_a):
+    def stats_teams_prepocessing(self,df, f_a):
         df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
         cols_drop = ['Unnamed: 1_level_0_# Pl','Unnamed: 2_level_0_Age','Playing Time_MP','Playing Time_Starts','Playing Time_Min','Playing Time_90s',
                      'Performance_CrdY','Performance_CrdR','Expected_npxG','Expected_npxG+xAG','Progression_PrgC','Progression_PrgP','Performance_Ast','Performance_G+A','Performance_PK',
                      'Expected_xAG','Per 90 Minutes_Ast','Per 90 Minutes_G+A','Per 90 Minutes_xAG','Per 90 Minutes_xG+xAG',
                      'Per 90 Minutes_G-PK','Per 90 Minutes_G+A-PK','Per 90 Minutes_npxG','Per 90 Minutes_npxG+xAG']
         df.drop(columns=cols_drop,inplace=True)
+        if not f_a:
+            df.columns = ['Club','Possession','Goals scored','Non-penalty goals','Penalties','Expected goals','Goals permatch','Expected goals per match']
+        else:
+            df.columns = ['Club','Possession against','Goals against (no OG)','Non-penalty goals','Penalties against','Expected goals against','Goals permatch against',
+                          'Expected goals per match against']
 
-        df.columns = ['Club','Possession','Goals scored','Non-penalty goals','Penalties','Expected goals','Goals/match','Expected goals/match']
+        return df
+    
+    def stats_gk_preprocessing(self,df):
+        df.columns = ['_'.join(col).strip() for col in df.columns.values]
 
-        print(df.info(),df.shape)
+        df = df[df.iloc[:, 0] != 'Rk'].reset_index(drop=True) if df is not None and not df.empty else df
+
+        cols_drop = ['Unnamed: 0_level_0_Rk','Unnamed: 2_level_0_Nation','Unnamed: 3_level_0_Pos','Unnamed: 5_level_0_Age','Unnamed: 6_level_0_Born',
+                     'Playing Time_MP','Playing Time_Starts','Playing Time_Min','Playing Time_90s','Performance_W','Performance_D','Performance_L',
+                     'Penalty Kicks_PKatt','Penalty Kicks_PKA','Penalty Kicks_PKm','Penalty Kicks_Save%','Unnamed: 26_level_0_Matches']
+        df.drop(columns=cols_drop,inplace=True)
+
+        df.columns = ['Player','Team','Goals against', 'Goals against per match', 'Shots against', 'Saves', 'Save %', 'Clean sheets', 'Clean sheets per match', 'Penalties saved']
+        return df
+    
+    def stats_defence_preprocessing(self,df):
+        df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+        df = df[df.iloc[:, 0] != 'Rk'].reset_index(drop=True) if df is not None and not df.empty else df
+        cols_drop = ['Unnamed: 0_level_0_Rk','Unnamed: 2_level_0_Nation','Unnamed: 3_level_0_Pos','Unnamed: 5_level_0_Age','Unnamed: 6_level_0_Born','Unnamed: 7_level_0_90s',
+                     'Tackles_Def 3rd','Tackles_Mid 3rd','Tackles_Att 3rd','Challenges_Tkl','Challenges_Att','Challenges_Tkl%','Challenges_Lost','Blocks_Sh','Blocks_Pass',
+                     'Unnamed: 21_level_0_Tkl+Int','Unnamed: 24_level_0_Matches']
+        df.drop(columns=cols_drop,inplace=True)
+
+        df.columns = ['Player','Team','Tackles', 'Tackles won', 'Blocks', 'Interceptions', 'Clearences', 'Errors leading to shots']
+
+        return df
+    
+    def stats_passing_preprocessing(self,df):
+        df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+        df = df[df.iloc[:, 0] != 'Rk'].reset_index(drop=True) if df is not None and not df.empty else df
+
+        df = df[['Unnamed: 1_level_0_Player', 'Unnamed: 4_level_0_Squad', 'Total_Cmp','Total_Cmp%','Unnamed: 22_level_0_Ast','Expected_xA','Unnamed: 26_level_0_KP']]
+
+        df.columns = ['Player','Team','Passes completed','Passes completed %','Assists','Expected assists','Key passes']
+        
+        return df
+    
+    def stats_shooting_preprocessing(self,df):
+        df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+        df = df[df.iloc[:, 0] != 'Rk'].reset_index(drop=True) if df is not None and not df.empty else df
+
+        cols_drop = ['Unnamed: 0_level_0_Rk','Unnamed: 2_level_0_Nation','Unnamed: 3_level_0_Pos','Unnamed: 5_level_0_Age','Unnamed: 6_level_0_Born','Unnamed: 7_level_0_90s',
+                     'Standard_Dist','Standard_G/SoT', 'Standard_PKatt','Expected_npxG','Expected_npxG/Sh', 'Expected_G-xG', 'Expected_np:G-xG', 'Unnamed: 25_level_0_Matches']
+        df.drop(columns=cols_drop,inplace=True)
+
+        df.columns = ['Player','Team','Goals','Shots', 'Shots on target', 'Shots on target %', 'Shots per match', 'Shots on target per match', 'Goal per shot', 'Fouls scored',
+                      'Penalties scored', 'Expected goals']
 
         return df
     
