@@ -6,6 +6,7 @@ import time
 import plotly.express as px
 from azure.storage.blob import BlobServiceClient
 import io
+import os
 
 # Configure page
 st.set_page_config(
@@ -25,60 +26,44 @@ st.markdown("""
 def load_predictions_data():
     with st.spinner("📊 Loading cached prediction data from cloud..."):
         try:
-            # ✅ Correct way to read from Streamlit secrets
-            connection_string = st.secrets["azure_storage_connection_string"]
+            connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING") or os.getenv("azure_storage_connection_string")
+            if not connection_string:
+                st.error("❌ Error loading predictions data from cloud.")
+                return {}
             container_name = "predictions"
-            
-            # Create a blob service client
             blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-            
+
             positions = ['goalkeepers', 'defenders', 'midfielders', 'forwards']
             position_dictionary = {}
-            
             for position_name in positions:
                 blob_name = f"{position_name}.csv"
                 blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-                
-                # Download blob data directly into memory
-                stream_downloader = blob_client.download_blob()
-                data = stream_downloader.readall()
-                
-                # Read CSV into DataFrame
-                final_df = pd.read_csv(io.BytesIO(data))
-                position_dictionary[position_name] = final_df
-                
+                data = blob_client.download_blob().readall()
+                position_dictionary[position_name] = pd.read_csv(io.BytesIO(data))
             return position_dictionary
-
-        except Exception as e:
-            st.error(f"❌ Error loading predictions data from cloud: {e}")
+        except Exception:
+            st.error("❌ Error loading predictions data from cloud.")
             return {}
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_stats(name):
     with st.spinner(f"📊 Loading cached {name} stats from cloud..."):
         try:
-            # Get connection string from Streamlit secrets
-            connection_string = st.secrets["azure_storage_connection_string"]
+            connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING") or os.getenv("azure_storage_connection_string")
+            if not connection_string:
+                st.error("❌ Error loading stats data from cloud.")
+                return pd.DataFrame()
             container_name = "stats"
-            
-            # Create a blob service client
             blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-            
+
             blob_name = f"{name}.csv"
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-            
-            # Download blob data into a stream
-            stream_downloader = blob_client.download_blob()
             stream = io.BytesIO()
-            stream_downloader.readinto(stream)
-            stream.seek(0) # Go to the start of the stream
-            
-            # Read the stream into a pandas DataFrame
-            final_df = pd.read_csv(stream)
-            return final_df
-
-        except Exception as e:
-            st.error(f"❌ Error loading stats data for '{name}' from cloud: {str(e)}")
+            blob_client.download_blob().readinto(stream)
+            stream.seek(0)
+            return pd.read_csv(stream)
+        except Exception:
+            st.error("❌ Error loading stats data from cloud.")
             return pd.DataFrame()
 
 def create_dream_team(position_dictionary, finished_gw):
