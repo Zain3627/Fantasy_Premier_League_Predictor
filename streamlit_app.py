@@ -1,6 +1,7 @@
 import streamlit as st
 import DataLoader as dl
 import DataPreprocessing as dp
+import LiveStats as ls
 import pandas as pd
 import time
 import plotly.express as px
@@ -307,7 +308,7 @@ st.markdown('<h1 class="title">⚽ FPL Vision</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">Your vision into Fantasy Premier League performance using advanced machine learning</p>', unsafe_allow_html=True)
 
 # Main navigation with session state to remember active tab
-tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team"]
+tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team", "📊 Live Team Analysis"]
 
 # Use st.radio to control the active tab, and store it in session state
 st.session_state.active_tab = st.radio(
@@ -1097,6 +1098,148 @@ elif st.session_state.active_tab == "⭐ Dream Team":
     else:
         st.warning("No prediction data available.")
         st.info("Please go to the Predictions tab and generate predictions first to create your Dream Team!")
+
+# TAB 5: LIVE TEAM ANALYSIS
+elif st.session_state.active_tab == "📊 Live Team Analysis":
+    st.markdown("## 📊 Live Team Analysis")
+    st.write("Analyze your Fantasy Premier League team's live performance.")
+
+    # Team ID input
+    team_id = st.text_input("Enter your Team ID:")
+
+    if team_id:
+        st.markdown(f"### Analyzing Team ID: **{team_id}**")
+
+        try:
+            # Run the live stats pipeline
+            loader = dl.DataLoader()
+            preprocessor = dp.DataPreprocessing()
+
+            liveStatsPipeline = ls.LiveStats(loader, preprocessor)
+            liveStatsPipeline.run(team_id)
+
+            # Extract summary fields
+            summary = {
+                "player_name": liveStatsPipeline.info["player_name"].iloc[0],
+                "nationality": liveStatsPipeline.info['nationality'].iloc[0],
+                "overall_points": liveStatsPipeline.info["overall_points"].iloc[0],
+                "event_points": liveStatsPipeline.info["event_points"].iloc[0],
+                "rank": liveStatsPipeline.info["rank"].iloc[0],
+                "event_rank": liveStatsPipeline.info["event_rank"].iloc[0],
+            }
+
+            # Display Summary analysis
+            team_name = summary["player_name"]
+            nationality = summary["nationality"]
+            overall_points = summary["overall_points"]
+            event_points = summary["event_points"]
+            rank = summary["rank"]
+            event_rank = summary["event_rank"]
+
+            st.markdown(
+                f"""
+                <div style="
+                    background: linear-gradient(135deg, #1f2937, #111827);
+                    padding: 1.5rem;
+                    border-radius: 16px;
+                    color: white;
+                    margin-bottom: 1rem;
+                ">
+                    <h2>📊 Summary Analysis</h2>
+                    <p><b>Team ID:</b> {team_id}</p>
+                    <p><b>Manager:</b> {team_name}</p>
+                    <p><b>Nationality:</b> {nationality}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric("Overall Points", overall_points)
+            col2.metric("Overall Rank", f"{rank:,}")
+            col3.metric(
+                f"GW {liveStatsPipeline.finished_gw} Points",
+                event_points
+            )
+
+            # Financial analysis
+            squad_value = (liveStatsPipeline.team_entry_history['value']*1.0 / 10.0).iloc[0]  # Convert to proper format
+            money_in_bank = (liveStatsPipeline.team_entry_history['bank']*1.0 / 10.0).iloc[0]  # Convert to proper format
+
+            st.markdown(
+                """
+                <div style="
+                    background: rgba(255, 255, 255, 0.05);
+                    padding: 1rem;
+                    border-radius: 14px;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    margin-top: 1.5rem;
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin:0;">💰 Financial Analysis</h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            col1, col2 = st.columns(2)
+            col1.metric("Squad Value", f"£{squad_value:.1f}M")
+            col2.metric("Money in Bank", f"£{money_in_bank:.1f}M")
+
+            df = liveStatsPipeline.team_picks.copy()
+            # Double points for captain
+            df["final_points"] = df["event_points"]
+            df.loc[df["is_captain"], "final_points"] *= 2
+
+            # Split squad
+            starting_xi = df.iloc[:11].reset_index(drop=True)
+            starting_xi.index += 1
+
+            bench = df.iloc[11:].reset_index(drop=True)
+            bench.index += 1
+
+            st.markdown("### 🟢 Starting XI")
+            st.dataframe(
+                starting_xi[
+                    ["web_name", "final_points", "is_captain", "is_vice_captain"]
+                ].rename(columns={
+                    "web_name": "Player",
+                    "final_points": "Points",
+                    "is_captain": "Captain",
+                    "is_vice_captain": "Vice Captain"
+                }),
+                use_container_width=True
+            )
+
+            st.markdown("### 🟡 Bench")
+            st.dataframe(
+                bench[
+                    ["web_name", "final_points"]
+                ].rename(columns={
+                    "web_name": "Player",
+                    "final_points": "Points"
+                }),
+                use_container_width=True
+            )
+
+            total_points = starting_xi["final_points"].sum()
+            st.metric(
+                label="🏆 Total Team Points (Starting XI)",
+                value=int(total_points)
+            )
+
+            st.success("Live team loaded successfully!")
+        except Exception as e:
+            st.error("Invalid Team ID. Please check and try again.")
+
+    st.markdown("---")
+    st.markdown("### How to Find Your Team ID")
+    st.write("""
+    1. Log in to your Fantasy Premier League account.
+    2. Go to the 'Points' section.
+    3. Your Team ID is usually displayed in the URL after `'/entry/'`.
+    4. Enter your Team ID above to analyze your team's performance.
+    """)
 
 # Footer
 st.markdown("---")

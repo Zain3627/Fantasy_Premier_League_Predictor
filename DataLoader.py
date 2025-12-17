@@ -63,9 +63,29 @@ class DataLoader:
         data = response.json()
         # players_data = data['elements']
         if section != None:
-            df = pd.DataFrame(data[section])
+            df = data[section]
         else:
-            df = pd.DataFrame(data)
+            df = pd.DataFrame([data])
+
+        if isinstance(df, list):
+            return pd.DataFrame(df)
+
+    # CASE 2: dict (scalar values) → single-row DataFrame
+        if isinstance(df, dict):
+            return pd.DataFrame([df])
+
+        return df
+    
+    def load_live_team(self, url):
+        response = requests.get(url).json()
+        summary = {
+            "player_name": response["player_first_name"] + " " + response["player_last_name"],
+            "nationality": response["player_region_name"],
+            "overall_points": response["summary_overall_points"],
+            "event_points": response["summary_event_points"],
+            "rank": response["summary_overall_rank"],
+            "event_rank": response["summary_event_rank"],
+        }
+        df = pd.DataFrame([summary])
         return df
 
- 

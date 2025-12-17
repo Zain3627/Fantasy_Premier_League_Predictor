@@ -9,5 +9,5 @@ if __name__ == "__main__":
     preprocessor = dp.DataPreprocessing()
 
     liveStatsPipeline = ls.LiveStats(loader,preprocessor)
-    liveStatsPipeline.run()
+    liveStatsPipeline.run(149020)
     print("Live Stats Pipeline completed successfully.")
