@@ -1,29 +1,31 @@
 Player,Team,Goals against,Goals against per match,Shots against,Saves,Save %,Clean sheets,Clean sheets per match,Penalties saved
-Alisson,Liverpool,7,1.17,16,9,56.3,2,33.3,0
-Alphonse Areola,West Ham,9,1.80,25,16,68.0,0,0.0,0
+Alisson,Liverpool,14,1.27,34,20,61.8,4,36.4,0
+Alphonse Areola,West Ham,21,1.75,62,42,69.4,0,0.0,0
 Altay Bayındır,Manchester Utd,11,1.83,24,13,54.2,0,0.0,0
-Marco Bizot,Aston Villa,3,1.50,7,4,71.4,1,50.0,0
+Marco Bizot,Aston Villa,8,2.00,16,9,56.3,1,25.0,0
 Karl Darlow,Leeds United,8,1.60,20,13,60.0,0,0.0,0
-Gianluigi Donnarumma,Manchester City,3,0.50,12,9,75.0,3,50.0,0
-Martin Dúbravka,Burnley,17,1.89,51,37,72.5,2,22.2,0
-Dean Henderson,Crystal Palace,9,1.00,29,20,72.4,3,33.3,0
+Gianluigi Donnarumma,Manchester City,12,0.92,36,23,66.7,6,46.2,1
+Martin Dúbravka,Burnley,33,2.06,87,57,67.8,2,12.5,0
+Dean Henderson,Crystal Palace,15,0.94,54,39,75.9,7,43.8,0
 Mads Hermansen,West Ham,11,2.75,20,9,45.0,1,25.0,0
-Sam Johnstone,Wolves,8,1.60,22,15,63.6,0,0.0,0
+John,Nott'ham Forest,0,0.00,1,1,100.0,1,100.0,0
+Sam Johnstone,Wolves,24,2.00,59,39,61.0,0,0.0,0
 Filip Jørgensen,Chelsea,2,2.14,3,1,33.3,0,,0
-Caoimhín Kelleher,Brentford,14,1.56,35,21,62.9,2,22.2,1
-Senne Lammens,Manchester Utd,3,1.00,14,11,78.6,1,33.3,0
-Bernd Leno,Fulham,14,1.56,41,28,70.7,1,11.1,0
-Giorgi Mamardashvili,Liverpool,7,2.33,18,11,66.7,0,0.0,0
-Emiliano Martínez,Aston Villa,5,0.71,19,14,73.7,2,28.6,0
-Lucas Perri,Leeds United,6,1.50,11,5,54.5,2,50.0,0
-Đorđe Petrović,Bournemouth,11,1.22,38,27,73.7,4,44.4,0
-Jordan Pickford,Everton,12,1.33,35,22,68.6,2,22.2,1
-Nick Pope,Newcastle Utd,8,0.89,34,26,76.5,5,55.6,0
-David Raya,Arsenal,3,0.33,19,16,84.2,6,66.7,0
-Robin Roefs,Sunderland,7,0.78,39,31,82.1,4,44.4,1
+Caoimhín Kelleher,Brentford,25,1.56,64,40,64.1,2,12.5,1
+Senne Lammens,Manchester Utd,15,1.50,38,23,63.2,1,10.0,0
+Bernd Leno,Fulham,26,1.62,68,44,64.7,3,18.8,0
+Giorgi Mamardashvili,Liverpool,10,2.00,27,16,66.7,1,20.0,1
+Emiliano Martínez,Aston Villa,9,0.75,42,32,78.6,4,33.3,1
+Lucas Perri,Leeds United,22,2.00,47,25,57.4,2,18.2,0
+Đorđe Petrović,Bournemouth,28,1.75,77,49,66.2,5,31.3,0
+Jordan Pickford,Everton,19,1.19,64,44,71.9,6,37.5,1
+Nick Pope,Newcastle Utd,13,1.10,51,39,74.5,5,41.7,0
+Aaron Ramsdale,Newcastle Utd,7,1.68,11,5,54.5,0,0.0,0
+David Raya,Arsenal,10,0.62,36,26,72.2,8,50.0,0
+Robin Roefs,Sunderland,17,1.06,70,53,75.7,5,31.3,1
 José Sá,Wolves,11,2.75,16,5,31.3,0,0.0,0
-Robert Sánchez,Chelsea,9,1.12,25,16,64.0,3,33.3,0
-Matz Sels,Nott'ham Forest,17,1.89,48,31,70.8,0,0.0,0
+Robert Sánchez,Chelsea,13,0.86,44,31,70.5,8,50.0,0
+Matz Sels,Nott'ham Forest,25,1.67,71,47,69.0,2,13.3,0
 James Trafford,Manchester City,4,1.33,15,11,80.0,1,33.3,0
-Bart Verbruggen,Brighton,15,1.67,34,21,58.8,0,0.0,0
-Guglielmo Vicario,Tottenham,7,0.78,33,26,78.8,4,44.4,0
+Bart Verbruggen,Brighton,23,1.44,63,41,66.7,3,18.8,1
+Guglielmo Vicario,Tottenham,21,1.31,68,47,70.6,5,31.3,0

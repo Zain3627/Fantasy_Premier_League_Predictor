@@ -75,7 +75,7 @@ class FantasyPredicorPipeline:
                             'team_defense_efficiency',
 
                             ]
-        df_rolling = df.groupby('player_id')[stats_to_average].rolling(window=5, min_periods=1).mean().round(3).reset_index()
+        df_rolling = df.groupby('player_id')[stats_to_average].rolling(window=7, min_periods=1).mean().round(3).reset_index()
         df_player_avg = df_rolling.groupby('player_id').last().reset_index()
         fixt = self.fixtures[self.fixtures['event'] == fix_gw]
         df_left = fixt.add_prefix("fixtures_")
@@ -128,7 +128,7 @@ class FantasyPredicorPipeline:
                             'clean_sheets_per_match','goals_per_match','assists_per_match','recoveries_per_match',
                             'tackles_per_match','interceptions_per_match','DC_per_match','team_defense_efficiency',
                             ]
-        df_rolling = df.groupby('player_id')[stats_to_average].rolling(window=5, min_periods=1).mean().round(3).reset_index()
+        df_rolling = df.groupby('player_id')[stats_to_average].rolling(window=7, min_periods=1).mean().round(3).reset_index()
         df_player_avg = df_rolling.groupby('player_id').last().reset_index()
         fixt = self.fixtures[self.fixtures['event'] == fix_gw]
         df_left = fixt.add_prefix("fixtures_")

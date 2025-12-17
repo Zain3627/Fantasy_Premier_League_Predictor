@@ -4,8 +4,6 @@ import DataPreprocessing as dp
 import pandas as pd
 import time
 import plotly.express as px
-from azure.storage.blob import BlobServiceClient
-import io
 import os
 
 # Configure page
@@ -24,46 +22,44 @@ st.markdown("""
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_predictions_data():
-    with st.spinner("📊 Loading cached prediction data from cloud..."):
+    with st.spinner("📊 Loading prediction data..."):
         try:
-            connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING") or os.getenv("azure_storage_connection_string")
-            if not connection_string:
-                st.error("❌ Error loading predictions data from cloud.")
-                return {}
-            container_name = "predictions"
-            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            base_dir = "predictions"  # directory in HF repo
 
             positions = ['goalkeepers', 'defenders', 'midfielders', 'forwards']
             position_dictionary = {}
+
             for position_name in positions:
-                blob_name = f"{position_name}.csv"
-                blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-                data = blob_client.download_blob().readall()
-                position_dictionary[position_name] = pd.read_csv(io.BytesIO(data))
+                file_path = os.path.join(base_dir, f"{position_name}.csv")
+
+                if not os.path.exists(file_path):
+                    st.error(f"❌ Missing file: {file_path}")
+                    return {}
+
+                position_dictionary[position_name] = pd.read_csv(file_path)
+
             return position_dictionary
-        except Exception:
-            st.error("❌ Error loading predictions data from cloud.")
+
+        except Exception as e:
+            st.error("❌ Error loading predictions data.")
+            st.exception(e)
             return {}
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_stats(name):
-    with st.spinner(f"📊 Loading cached {name} stats from cloud..."):
+    with st.spinner(f"📊 Loading {name} stats..."):
         try:
-            connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING") or os.getenv("azure_storage_connection_string")
-            if not connection_string:
-                st.error("❌ Error loading stats data from cloud.")
-                return pd.DataFrame()
-            container_name = "stats"
-            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            file_path = os.path.join("stats", f"{name}.csv")
 
-            blob_name = f"{name}.csv"
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-            stream = io.BytesIO()
-            blob_client.download_blob().readinto(stream)
-            stream.seek(0)
-            return pd.read_csv(stream)
-        except Exception:
-            st.error("❌ Error loading stats data from cloud.")
+            if not os.path.exists(file_path):
+                st.error(f"❌ Missing file: {file_path}")
+                return pd.DataFrame()
+
+            return pd.read_csv(file_path)
+
+        except Exception as e:
+            st.error("❌ Error loading stats data.")
+            st.exception(e)
             return pd.DataFrame()
 
 def create_dream_team(position_dictionary, finished_gw):
@@ -349,7 +345,7 @@ with st.sidebar:
         deadlines = loader.load_data_api('https://fantasy.premierleague.com/api/bootstrap-static/','events')
         finished_gw = dp.DataPreprocessing().get_current_gw(deadlines) - 1
         st.markdown(f"### 📅 Current Status")
-        st.success(f"Latest GW data update: **{9}**")
+        st.success(f"Latest GW data update: **{16}**")
     except:
         finished_gw = 10
         st.warning("Could not fetch current gameweek")

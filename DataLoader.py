@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -48,6 +49,14 @@ class DataLoader:
 
     def load_data(self, url, table_id):
         return pd.read_html(url, attrs={"id":table_id})[0]
+    
+    def load_data_header(self, url, table_id):
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Raise an error for bad status codes
+        return pd.read_html(StringIO(response.text), attrs={"id": table_id})[0]
     
     def load_data_api(self, url,section):
         response = requests.get(url)

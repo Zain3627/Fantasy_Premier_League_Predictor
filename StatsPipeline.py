@@ -8,9 +8,9 @@ class StatsPipeline:
 
     def run(self):
         
-        teams_for = self.loader.load_data('https://fbref.com/en/comps/9/Premier-League-Stats#all_stats_squads_gca','stats_squads_standard_for')  
+        teams_for = self.loader.load_data_selenium('https://fbref.com/en/comps/9/Premier-League-Stats#all_stats_squads_gca','stats_squads_standard_for')  
         print(f'Loaded teams for stats: {teams_for is not None}')
-        teams_against = self.loader.load_data('https://fbref.com/en/comps/9/Premier-League-Stats#all_stats_squads_gca','stats_squads_standard_against')    
+        teams_against = self.loader.load_data_selenium('https://fbref.com/en/comps/9/Premier-League-Stats#all_stats_squads_gca','stats_squads_standard_against')    
         print(f'Loaded teams against stats: {teams_against is not None}')
 
         teams_for = self.preprocessor.stats_teams_prepocessing(teams_for,False)
