@@ -1,54 +1,14 @@
 import pandas as pd
 import numpy as np
+import DataLoader as dl
 import xgboost as xgb
+from sklearn.model_selection import RandomizedSearchCV
 
 class FantasyModel:
     def __init__(self,position):
-        if position == 1:   # goalkeeper
-            self.model = xgb.XGBRegressor(
-                n_estimators=1000,       # The number of boosting rounds or trees to build. More trees can be better but may lead to overfitting.
-                learning_rate=0.05,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
-                max_depth=8,             # The maximum depth of each tree. Deeper trees capture more complex patterns but are more likely to overfit.
-                subsample=0.8,           # The fraction of the training data to be randomly sampled for each tree. Prevents overfitting.
-                colsample_bytree=0.4,    # The fraction of features (columns) to be randomly sampled when building each tree.
-                gamma=0,               # Minimum loss reduction required to make a split. A higher gamma makes the algorithm more conservative.
-                reg_alpha=1,         # L1 regularization on weights. Encourages sparsity, which can be useful in high-dimensional data.
-                reg_lambda=1,            # L2 regularization on weights. A standard regularization technique to prevent overfitting by smoothing weights.
-                objective='reg:squarederror', # Defines the loss function to be minimized. 'reg:squarederror' is for regression tasks.
-
-                random_state=27,
-                n_jobs=-1
-            )
-        elif position == 2: # defenders
-            self.model = xgb.XGBRegressor(
-                n_estimators=1000,       # The number of boosting rounds or trees to build. More trees can be better but may lead to overfitting.
-                learning_rate=0.005,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
-                max_depth=4,             # The maximum depth of each tree. Deeper trees capture more complex patterns but are more likely to overfit.
-                subsample=0.8,           # The fraction of the training data to be randomly sampled for each tree. Prevents overfitting.
-                colsample_bytree=0.2,    # The fraction of features (columns) to be randomly sampled when building each tree.
-                gamma=0,                  # Minimum loss reduction required to make a split. A higher gamma makes the algorithm more conservative.
-                reg_alpha=0,              # L1 regularization on weights. Encourages sparsity, which can be useful in high-dimensional data.
-                reg_lambda=1,             # L2 regularization on weights. A standard regularization technique to prevent overfitting by smoothing weights.
-                objective='reg:squarederror', # Defines the loss function to be minimized. 'reg:squarederror' is for regression tasks.
-
-                random_state=27,
-                n_jobs=-1
-            )
-        else: # attackers and midfielders
-            self.model = xgb.XGBRegressor(
-                n_estimators=1000,       # The number of boosting rounds or trees to build. More trees can be better but may lead to overfitting.
-                learning_rate=0.5,      # Step size shrinkage to prevent overfitting. A lower value makes the boosting process more conservative.
-                max_depth=8,             # The maximum depth of each tree. Deeper trees capture more complex patterns but are more likely to overfit.
-                subsample=0.5,           # The fraction of the training data to be randomly sampled for each tree. Prevents overfitting.
-                colsample_bytree=0.2,    # The fraction of features (columns) to be randomly sampled when building each tree.
-                gamma=0,                  # Minimum loss reduction required to make a split. A higher gamma makes the algorithm more conservative.
-                reg_alpha=0,              # L1 regularization on weights. Encourages sparsity, which can be useful in high-dimensional data.
-                reg_lambda=0,             # L2 regularization on weights. A standard regularization technique to prevent overfitting by smoothing weights.
-                objective='reg:squarederror', # Defines the loss function to be minimized. 'reg:squarederror' is for regression tasks.
-
-                random_state=27,
-                n_jobs=-1
-            )
+        self.position = position
+        self.loader = dl.DataLoader()
+        self.model = xgb.XGBRegressor()
 
     def train(self, X, y):
         # Convert object columns to numeric
@@ -56,11 +16,82 @@ class FantasyModel:
             if X[col].dtype == "object":
                 X[col] = pd.to_numeric(X[col], errors="coerce")
 
-        y = np.clip(y, None, np.percentile(y, 98))
-        self.model.fit(X, y)
+        if self.position != 1:
+            if self.position == 3:
+                y = np.clip(y, None, np.percentile(y, 96))
+            else:
+                y = np.clip(y, None, np.percentile(y, 96))
+
+        # apply grid search for the following parameters
+        param_dist = { 
+            'n_estimators': [600, 800, 1000], 
+            'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 
+            'max_depth': [4, 6, 8], 'subsample': [0.2, 0.4, 0.6, 0.8, 1.0], 
+            'colsample_bytree': [0.8, 0.9, 1.0], 
+            'gamma': [0], 
+            'reg_alpha': [0, 0.5, 1], 
+            'reg_lambda': [0, 0.5, 1] 
+        }
+        
+        random_search = RandomizedSearchCV(self.model, param_distributions=param_dist, n_iter=40, cv=3, n_jobs=-1, verbose=2, random_state=27)
+        random_search.fit(X, y)
+        self.model = random_search.best_estimator_
 
     def predict(self, X):
         for col in X.columns:
             if X[col].dtype == "object":
                 X[col] = pd.to_numeric(X[col], errors="coerce")
-        return np.round(self.model.predict(X), 2)
+        Y = np.round(self.model.predict(X), 2)
+        added_numbers = pd.DataFrame()
+        if self.position == 1:
+            for idx, row in X.iterrows():
+                clean_sheets_per_match = row['clean_sheets_per_match']
+                diff_def_att = row['diff_def_att']
+                if diff_def_att < 0:
+                    added_numbers.loc[idx, 'expected_CS_points'] = -1*(1-clean_sheets_per_match) * 3
+                else:
+                    added_numbers.loc[idx, 'expected_CS_points'] = clean_sheets_per_match * 3
+            Y = Y + added_numbers['expected_CS_points']
+            # Y = Y * X['player_will_play']
+
+        elif self.position == 2:
+            for idx, row in X.iterrows():
+                clean_sheets_per_match = row['clean_sheets_per_match']
+                diff_def_att = row['diff_def_att']
+                if diff_def_att < 0:
+                    added_numbers.loc[idx, 'expected_CS_points'] = -1*(1-clean_sheets_per_match) * 2
+                else:
+                    added_numbers.loc[idx, 'expected_CS_points'] = clean_sheets_per_match * 2
+            Y = Y + added_numbers['expected_CS_points']
+            # Y = Y * X['player_will_play']
+
+        elif self.position == 3:
+            for idx, row in X.iterrows():
+                goal_involvements = row['goals_per_match'] + row['assists_per_match']
+                diff_att_def = row['diff_att_def']
+                if diff_att_def < 0:
+                    added_numbers.loc[idx, 'expected_CS_points'] = -1*(1-goal_involvements) * 1
+                else:
+                    added_numbers.loc[idx, 'expected_CS_points'] = goal_involvements * 2
+            Y = Y + added_numbers['expected_CS_points']
+            # Y = Y * X['player_will_play']
+        else:
+            for idx, row in X.iterrows():
+                goal_involvements = row['goals_per_match'] + row['assists_per_match']
+                diff_att_def = row['diff_att_def']
+                if diff_att_def < 0:
+                    added_numbers.loc[idx, 'expected_CS_points'] = -1*(1-goal_involvements) * 1
+                else:
+                    added_numbers.loc[idx, 'expected_CS_points'] = goal_involvements * 3
+            Y = Y + added_numbers['expected_CS_points']
+        
+        X['player_will_play'] = X['player_will_play'].round()
+        Y = Y * X['player_will_play']
+        Y = Y.clip(lower=0)
+
+        player_stats = self.loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
+        status_map = dict(zip(player_stats['id'], player_stats['status']))
+        for idx, row in X.iterrows():
+            if status_map.get(row['player_id']) != 'a':
+                Y.loc[idx] = 0
+        return np.round(Y, 2)
