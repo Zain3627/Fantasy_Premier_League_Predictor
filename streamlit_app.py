@@ -308,7 +308,8 @@ st.markdown('<h1 class="title">⚽ FPL Vision</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">Your vision into Fantasy Premier League performance using advanced machine learning</p>', unsafe_allow_html=True)
 
 # Main navigation with session state to remember active tab
-tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team", "📊 Live Team Analysis","🏆 FPL Elite Managers"]
+tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team", "📊 Live Team Analysis",
+             "FPL Top 10 Managers 2025/2026", "🏆 FPL Elite Managers"]
 
 # Use st.radio to control the active tab, and store it in session state
 st.session_state.active_tab = st.radio(
@@ -1299,11 +1300,12 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
     4. Enter your Team ID above to analyze your team's performance.
     """)
 
-elif st.session_state.active_tab == "🏆 FPL Elite Managers":
-    st.markdown("## 🏆 FPL Elite Managers")
+elif st.session_state.active_tab == "🏆 FPL Top 10 Managers 2025/2026":
+    st.markdown("## 🏆 FPL Top 10 Managers 2025/2026")
     dl_loader = dl.DataLoader()
-    
-    # List of five names
+    live_stats_pipeline = ls.LiveStats(dl_loader, dp.DataPreprocessing())
+    url = "https://fantasy.premierleague.com/api/leagues-classic/314/standings/"
+
     elite_managers = ["Ben Crellin", "Mark Hurst", "Hinoto Achumi", "John Walsh", "-Calm -",
                       "Niklas Nylander", "Jamie Nettleship", "Tom Dollimore", "Tommy Shinton", "Leo Wright"]
     managers_ids = {
@@ -1334,22 +1336,10 @@ elif st.session_state.active_tab == "🏆 FPL Elite Managers":
     st.markdown(f"### Selected User: {selected_user}")
     st.markdown(f"### Selected Gameweek: GW {selected_gw}")
     url = f"https://fantasy.premierleague.com/api/entry/{managers_ids[selected_user]}/event/{selected_gw}/picks/"
-    df = dl_loader.load_data_api(url,'picks')
-    players = dl_loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
-    players= players[['id', 'web_name','team','event_points','selected_by_percent','transfers_in_event','transfers_out_event']]
-    df = df.merge(players, left_on='element', right_on='id', how='left')
-            
-    # Double points for captain
-    df["final_points"] = df["event_points"]
-    df.loc[df['multiplier'] > 1, "final_points"] = df["event_points"] * df['multiplier']
+    starting_xi, bench = live_stats_pipeline.get_team_info(url)
+    
 
-    # Split squad based on multiplier
-    starting_xi = df[df['multiplier'] > 0].reset_index(drop=True)
-    starting_xi.index += 1
-
-    bench = df[df['multiplier'] == 0].reset_index(drop=True)
-    bench.index += 1
-
+    # display starting_xi
     st.markdown("### 🟢 Starting XI")
     st.dataframe(
         starting_xi[
@@ -1362,7 +1352,7 @@ elif st.session_state.active_tab == "🏆 FPL Elite Managers":
         }),
         use_container_width=True
     )
-
+    # display bench
     st.markdown("### 🟡 Bench")
     if bench.empty:
         st.info("Bench Boost chip activated! No players on the bench.")
@@ -1383,6 +1373,80 @@ elif st.session_state.active_tab == "🏆 FPL Elite Managers":
         label="🏆 Total Team Points (Starting XI)",
         value=int(total_points)
     )
+
+elif st.session_state.active_tab == "🏆 FPL Elite Managers":
+    st.markdown("## 🏆 FPL Elite Managers")
+    dl_loader = dl.DataLoader()
+    live_stats_pipeline = ls.LiveStats(dl_loader, dp.DataPreprocessing())
+
+    elite_managers = ["Ben Crellin", "Mark Hurst", "Hinoto Achumi", "John Walsh", "-Calm -",
+                      "Niklas Nylander", "Jamie Nettleship", "Tom Dollimore", "Tommy Shinton", "Leo Wright"]
+    managers_ids = {
+        "Ben Crellin": 6586,
+        "Mark Hurst": 62110,
+        "Hinoto Achumi": 28321,
+        "John Walsh": 1277598,
+        "-Calm -": 18383,
+        "Niklas Nylander": 649505,
+        "Jamie Nettleship": 215622,
+        "Tom Dollimore": 497000,
+        "Tommy Shinton": 155602,
+        "Leo Wright": 30222
+    }
+    # Dropdown to select a user
+    selected_user = st.selectbox("Choose a user:", elite_managers)
+
+    # Input for gameweek
+    selected_gw = st.number_input(
+        "Enter a Gameweek (GW):",
+        min_value=1,
+        max_value=finished_gw,
+        value=finished_gw,
+        help=f"Enter a gameweek number (1 to {finished_gw})"
+    )
+
+    # Display the selected user and gameweek
+    st.markdown(f"### Selected User: {selected_user}")
+    st.markdown(f"### Selected Gameweek: GW {selected_gw}")
+    url = f"https://fantasy.premierleague.com/api/entry/{managers_ids[selected_user]}/event/{selected_gw}/picks/"
+    starting_xi, bench = live_stats_pipeline.get_team_info(url)
+    
+    # display starting_xi
+    st.markdown("### 🟢 Starting XI")
+    st.dataframe(
+        starting_xi[
+            ["web_name", "final_points", "is_captain", "is_vice_captain"]
+        ].rename(columns={
+            "web_name": "Player",
+            "final_points": "Points",
+            "is_captain": "Captain",
+            "is_vice_captain": "Vice Captain"
+        }),
+        use_container_width=True
+    )
+    # display bench
+    st.markdown("### 🟡 Bench")
+    if bench.empty:
+        st.info("Bench Boost chip activated! No players on the bench.")
+    else:
+        st.dataframe(
+            bench[
+                ["web_name", "final_points"]
+            ].rename(columns={
+                "web_name": "Player",
+                "final_points": "Points"
+            }),
+            use_container_width=True
+        )
+
+    entry_history = dl_loader.load_data_api(url,'entry_history')
+    total_points = starting_xi["final_points"].sum() - entry_history['event_transfers_cost'].iloc[0]
+    st.metric(
+        label="🏆 Total Team Points (Starting XI)",
+        value=int(total_points)
+    )
+
+
 # Footer
 st.markdown("---")
 st.markdown(
