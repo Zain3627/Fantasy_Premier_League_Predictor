@@ -1,2 +1,3 @@
 - Reading team details with chips
 - Reading team details with negative transfers
+- Start from new GW and record live price changes
