@@ -1,0 +1,2 @@
+- Reading team details with chips
+- Reading team details with negative transfers

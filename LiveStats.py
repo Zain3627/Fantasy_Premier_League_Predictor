@@ -23,10 +23,10 @@ class LiveStats:
         # print("value " + str(team_value))
         
         self.team_picks = self.loader.load_data_api(url2, 'picks')
-        player_stats = self.loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
-        player_ids_names = player_stats.copy()
-        player_ids_names = player_ids_names[['id', 'web_name','team','event_points']]
-        self.team_picks = self.team_picks.merge(player_ids_names, left_on='element', right_on='id', how='left')
+        players = self.loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
+        player_ids_names = players.copy()
+        self.players_stats = player_ids_names[['id', 'web_name','team','event_points','selected_by_percent','transfers_in_event','transfers_out_event']]
+        self.team_picks = self.team_picks.merge(self.players_stats, left_on='element', right_on='id', how='left')
         # print(f"Team Picks for GW{self.finished_gw}: ")
         # print(self.team_picks)
     

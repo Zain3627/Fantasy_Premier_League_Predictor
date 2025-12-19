@@ -1226,6 +1226,62 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
                 value=int(total_points)
             )
 
+            starting_xi["selected_by_percent_numeric"] = starting_xi["selected_by_percent"].str.rstrip('%').astype(float)
+            # Calculate old_percent for all rows in a vectorized manner
+            starting_xi["old_percent"] = (
+                (starting_xi["selected_by_percent_numeric"] * 126613.91 
+                - starting_xi["transfers_in_event"] 
+                + starting_xi["transfers_out_event"]) / 12661391.0 * 100.0
+            )
+            # Ensure no negative percentages
+            starting_xi["old_percent"] = starting_xi["old_percent"].clip(lower=0)
+            starting_xi["old_percent"] = starting_xi["old_percent"].round(2)
+            differentials = starting_xi[starting_xi["old_percent"] < 25]
+
+            st.markdown("### 🔍 Differential Players in Starting XI")
+            differentials.reset_index(drop=True, inplace=True)
+            differentials.index += 1
+            if not differentials.empty:
+                st.dataframe(
+                    differentials[
+                        ["web_name", "final_points", "old_percent"]
+                    ].rename(columns={
+                        "web_name": "Player",
+                        "final_points": "Points",
+                        "old_percent": "Ownership (%)"
+                    }),
+                    use_container_width=True
+                )
+            else:
+                st.markdown("No differential players (ownership < 25%).")
+
+            # Threats
+            liveStatsPipeline.players_stats["old_percent"] = (
+                (liveStatsPipeline.players_stats["selected_by_percent"].str.rstrip('%').astype(float) * 126613.91 
+                - liveStatsPipeline.players_stats["transfers_in_event"] 
+                + liveStatsPipeline.players_stats["transfers_out_event"]) / 12661391.0 * 100.0
+            )
+            threats = liveStatsPipeline.players_stats
+            threats["old_percent"] = threats["old_percent"].clip(lower=0)
+            threats["old_percent"] = threats["old_percent"].round(2)
+            threats = threats.sort_values(by="old_percent", ascending=False)
+            threats_filtered = threats[~threats["id"].isin(starting_xi["id"])]
+            threats_top5 = threats_filtered.sort_values(by="old_percent", ascending=False).head(5)
+
+            st.markdown("### ⚠️ Top Threats This Gameweek")
+            threats_top5.reset_index(drop=True, inplace=True)
+            threats_top5.index += 1
+            st.dataframe(
+                threats_top5[
+                    ["web_name", "event_points", "old_percent"]
+                ].rename(columns={
+                    "web_name": "Player",
+                    "event_points": "GW Points",
+                    "old_percent": "Ownership (%)"
+                }),
+                use_container_width=True
+            )
+
             st.success("Live team loaded successfully!")
         except Exception as e:
             st.error("Invalid Team ID. Please check and try again.")
