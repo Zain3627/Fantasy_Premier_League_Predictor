@@ -23,6 +23,7 @@ class LiveStats:
         starting_xi.index += 1
         bench = df[df['multiplier'] == 0].reset_index(drop=True)
         bench.index += 1
+        print(starting_xi.columns)
         return starting_xi, bench
     
     def load_top_players(self, n=10):

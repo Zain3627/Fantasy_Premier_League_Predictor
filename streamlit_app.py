@@ -5,6 +5,7 @@ import LiveStats as ls
 import pandas as pd
 import time
 import plotly.express as px
+import plotly.graph_objects as go
 import os
 
 # Configure page
@@ -14,6 +15,191 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+def display_team_on_pitch(df):
+    """
+    Display team players on a football pitch visualization based on element_type.
+    element_type: 1=GK, 2=DEF, 3=MID, 4=FWD
+    """
+    
+    # Group players by position
+    gk = df[df['element_type'] == 1]
+    defenders = df[df['element_type'] == 2]
+    midfielders = df[df['element_type'] == 3]
+    forwards = df[df['element_type'] == 4]
+    
+    num_def, num_mid, num_fwd = len(defenders), len(midfielders), len(forwards)
+    team_size = len(df)
+    bench_boost = " (Bench Boost)" if team_size == 15 else ""
+    
+    def get_positions(num_players, y_pos):
+        """Calculate evenly spaced positions"""
+        if num_players == 1:
+            return [(50, y_pos)]
+        spacing = 60 / (num_players - 1)
+        return [(20 + i * spacing, y_pos) for i in range(num_players)]
+    
+    # Assign positions
+    players_data = []
+    position_map = {
+        'GK': (gk, 10, 'yellow'),
+        'DEF': (defenders, 32, 'royalblue'),
+        'MID': (midfielders, 60, 'limegreen'),
+        'FWD': (forwards, 82, 'red')
+    }
+    
+    for pos_name, (group, y_pos, color) in position_map.items():
+        for idx, (_, player) in enumerate(group.iterrows()):
+            positions = get_positions(len(group), y_pos)
+            if idx < len(positions):
+                x, y = positions[idx]
+                players_data.append({
+                    'name': player.get('web_name', f'{pos_name} {idx+1}'),
+                    'points': player.get('final_points', 0),
+                    'x': x, 'y': y, 'position': pos_name,
+                    'color': color,
+                    'is_captain': player.get('is_captain', False),
+                    'is_vice_captain': player.get('is_vice_captain', False)
+                })
+    
+    # Create pitch
+    fig = go.Figure()
+    
+    # Pitch background and markings
+    fig.add_shape(type="rect", x0=0, y0=0, x1=100, y1=100,
+                 line=dict(color="white", width=3),
+                 fillcolor="rgba(34, 139, 34, 0.3)")
+    
+    # Pitch lines
+    shapes = [
+        dict(type="circle", x0=40, y0=40, x1=60, y1=60),  # Center circle
+        dict(type="line", x0=0, y0=50, x1=100, y1=50),    # Center line
+        dict(type="rect", x0=30, y0=0, x1=70, y1=15),     # Penalty box bottom
+        dict(type="rect", x0=30, y0=85, x1=70, y1=100),   # Penalty box top
+        dict(type="rect", x0=40, y0=0, x1=60, y1=7),      # Goal area bottom
+        dict(type="rect", x0=40, y0=93, x1=60, y1=100)    # Goal area top
+    ]
+    
+    for shape in shapes:
+        fig.add_shape(**shape, line=dict(color="white", width=2))
+    
+    # Add players
+    for player in players_data:
+        if player['is_captain']:
+            color, size, symbol = 'gold', 28, 'star'
+        elif player['is_vice_captain']:
+            color, size, symbol = 'silver', 26, 'star'
+        else:
+            color, size, symbol = player['color'], 22, 'circle'
+        
+        fig.add_trace(go.Scatter(
+            x=[player['x']], y=[player['y']],
+            mode='markers+text',
+            marker=dict(size=size, color=color, symbol=symbol,
+                       line=dict(color='white', width=2)),
+            text=f"<b>{player['name']}</b><br>{player['points']} pts",
+            textposition="bottom center",
+            textfont=dict(size=16, color='white', family='Arial Black'),
+            hovertemplate=f"<b>{player['name']}</b><br>Position: {player['position']}<br>" +
+                         f"Points: {player['points']}<br>Captain: {'✓' if player['is_captain'] else '✗'}<br>" +
+                         f"Vice Captain: {'✓' if player['is_vice_captain'] else '✗'}<extra></extra>",
+            showlegend=False
+        ))
+    
+    # Layout
+    fig.update_layout(
+        title=dict(
+            text=f"<b>{num_def}-{num_mid}-{num_fwd} Formation{bench_boost}</b>",
+            font=dict(size=26, color='white', family='Arial Black'),
+            x=0.5, xanchor='center'
+        ),
+        plot_bgcolor='rgba(34, 139, 34, 0.8)',
+        paper_bgcolor='rgba(20, 20, 20, 0.9)',
+        xaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, zeroline=False),
+        yaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, 
+                  zeroline=False, scaleanchor="x", scaleratio=1),
+        height=700, hovermode='closest',
+        margin=dict(l=20, r=20, t=70, b=20)
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Display dataframe
+    st.dataframe(
+        df[["web_name", "final_points", "is_captain", "is_vice_captain"]].rename(
+            columns={
+                "web_name": "Player",
+                "final_points": "Points",
+                "is_captain": "Captain",
+                "is_vice_captain": "Vice Captain"
+            }
+        ),
+        use_container_width=True
+    )
+
+
+def display_bench_players(df):
+    """
+    Display bench players on a bench visualization.
+    """
+    
+    num_players = len(df)
+    
+    if num_players == 0:
+        st.info("No bench players")
+        return
+    
+    # Create bench visualization
+    fig = go.Figure()
+    
+    # Bench background
+    fig.add_shape(type="rect", x0=0, y0=0, x1=100, y1=30,
+                 line=dict(color="#8B4513", width=4),
+                 fillcolor="rgba(139, 69, 19, 0.6)")
+    
+    # Bench slats
+    for i in range(0, 101, 10):
+        fig.add_shape(type="line", x0=i, y0=0, x1=i, y1=30,
+                     line=dict(color="#654321", width=2))
+    
+    # Calculate positions for bench players
+    spacing = 80 / (num_players + 1)
+    
+    # Add bench players
+    for idx, (_, player) in enumerate(df.iterrows()):
+        x = 10 + (idx + 1) * spacing
+        y = 15
+        
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y],
+            mode='markers+text',
+            marker=dict(size=24, color='gray', symbol='circle',
+                       line=dict(color='white', width=2)),
+            text=f"<b>{player.get('web_name', f'Player {idx+1}')}</b><br>{player.get('final_points', 0)} pts",
+            textposition="top center",
+            textfont=dict(size=14, color='white', family='Arial Black'),
+            hovertemplate=f"<b>{player.get('web_name', '')}</b><br>" +
+                         f"Points: {player.get('final_points', 0)}<extra></extra>",
+            showlegend=False
+        ))
+    
+    # Layout
+    fig.update_layout(
+        title=dict(
+            text=f"<b>Bench ({num_players} Players)</b>",
+            font=dict(size=22, color='white', family='Arial Black'),
+            x=0.5, xanchor='center'
+        ),
+        plot_bgcolor='rgba(60, 60, 60, 0.8)',
+        paper_bgcolor='rgba(20, 20, 20, 0.9)',
+        xaxis=dict(range=[0, 100], showgrid=False, showticklabels=False, zeroline=False),
+        yaxis=dict(range=[0, 30], showgrid=False, showticklabels=False, zeroline=False),
+        height=250, hovermode='closest',
+        margin=dict(l=20, r=20, t=60, b=20)
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
 
 st.markdown("""
     <meta name="description" content="FPL Vision – AI-powered Fantasy Premier League predictions, player stats, and data insights for FPL managers.">
@@ -983,110 +1169,95 @@ elif st.session_state.active_tab == "⭐ Dream Team":
             substitutes = dream_team_result['substitutes']
             dream_team = dream_team_result['dream_team']
             points_col = dream_team_result['points_col']
-            
-            # Display Dream Team
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                st.markdown("### 🏆 Starting XI")
-                st.markdown("*Formation: Optimal based on predicted points*")
-                
-                # Captain and Vice Captain
-                if len(starting_xi) >= 2:
-                    captain = starting_xi[0]
-                    vice_captain = starting_xi[1]
-                    
-                    col_cap, col_vice = st.columns(2)
-                    with col_cap:
-                        st.markdown("#### 👑 Captain")
-                        st.success(f"**{captain.get('web_name', 'Unknown')}** ({captain['position']})")
-                        st.metric(f"Predicted GW {finished_gw + 1} Points", f"{captain[points_col]:.1f}")
-                    
-                    with col_vice:
-                        st.markdown("#### 🎖️ Vice Captain")
-                        st.info(f"**{vice_captain.get('web_name', 'Unknown')}** ({vice_captain['position']})")
-                        st.metric(f"Predicted GW {finished_gw + 1} Points", f"{vice_captain[points_col]:.1f}")
-                
-                # Starting XI table
-                starting_xi_df = pd.DataFrame([
-                    {
-                        'Player': player.get('web_name', 'Unknown'),
-                        'Position': player['position'],
-                        f'Predicted GW {finished_gw + 1} Points': f"{player[points_col]:.1f}",
-                        'Role': '👑 Captain' if i == 0 else '🎖️ Vice Captain' if i == 1 else '⚽ Player'
-                    }
-                    for i, player in enumerate(starting_xi)
-                ])
-                
-                # Sort by position for display
-                position_order = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward']
-                starting_xi_df['Position'] = pd.Categorical(starting_xi_df['Position'], categories=position_order, ordered=True)
-                starting_xi_df = starting_xi_df.sort_values('Position')
 
-                st.dataframe(starting_xi_df, use_container_width=True, hide_index=True)
-                
+            # Prepare dataframe for pitch visualization
+            starting_xi_df = pd.DataFrame(starting_xi)
+
+            # Map position names to element_type
+            position_to_element = {
+                'Goalkeeper': 1,
+                'Defender': 2,
+                'Midfielder': 3,
+                'Forward': 4
+            }
+            starting_xi_df['element_type'] = starting_xi_df['position'].map(position_to_element)
+
+            # Rename points column to 'final_points' for consistency
+            starting_xi_df['final_points'] = starting_xi_df[points_col]
+
+            # Add captain flags BEFORE sorting
+            starting_xi_df['is_captain'] = False
+            starting_xi_df['is_vice_captain'] = False
+
+            # Captain is the first player in starting_xi list (starting_xi[0])
+            if len(starting_xi) >= 1:
+                captain_name = starting_xi[0].get('web_name')
+                starting_xi_df.loc[starting_xi_df['web_name'] == captain_name, 'is_captain'] = True
+
+            # Vice Captain is the second player in starting_xi list (starting_xi[1])
+            if len(starting_xi) >= 2:
+                vice_captain_name = starting_xi[1].get('web_name')
+                starting_xi_df.loc[starting_xi_df['web_name'] == vice_captain_name, 'is_vice_captain'] = True
+
+            # Sort by element_type (which sorts by position: GK, DEF, MID, FWD)
+            starting_xi_df = starting_xi_df.sort_values('element_type').reset_index(drop=True)
+
+            # Make index start from 1 instead of 0
+            starting_xi_df.index = starting_xi_df.index + 1
+
+            # Display Captain and Vice Captain
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("#### 👑 Captain")
+                captain = starting_xi[0]
+                st.success(f"**{captain.get('web_name', 'Unknown')}** ({captain['position']})")
+                st.metric(f"Predicted GW {finished_gw + 1} Points", f"{captain[points_col]:.1f}")
+
             with col2:
+                st.markdown("#### 🎖️ Vice Captain")
+                if len(starting_xi) >= 2:
+                    vice_captain = starting_xi[1]
+                    st.info(f"**{vice_captain.get('web_name', 'Unknown')}** ({vice_captain['position']})")
+                    st.metric(f"Predicted GW {finished_gw + 1} Points", f"{vice_captain[points_col]:.1f}")
+
+            st.markdown("---")
+            
+            # Pitch Visualization
+            st.markdown("### ⚽ Starting XI Formation")
+            display_team_on_pitch(starting_xi_df)
+            
+            st.markdown("---")
+            
+            # Bench Visualization
+            if substitutes:
                 st.markdown("### 🔄 Substitutes Bench")
                 
-                if substitutes:
-                    for i, player in enumerate(substitutes):
-                        with st.container():
-                            st.markdown(f"**Sub {i+1}: {player.get('web_name', 'Unknown')}**")
-                            st.write(f"Position: {player['position']}")
-                            st.metric(f"GW {finished_gw + 1} Points", f"{player[points_col]:.1f}", label_visibility="collapsed")
-                            st.markdown("---")
-                else:
-                    st.info("No substitutes available")
+                # Prepare bench dataframe
+                bench_df = pd.DataFrame(substitutes)
+                bench_df['element_type'] = bench_df['position'].map(position_to_element)
+                bench_df['final_points'] = bench_df[points_col]
                 
-                # Squad summary
-                st.markdown("### 📊 Squad Summary")
-                
-                # Count positions in starting XI
-                position_counts = {}
-                for player in starting_xi:
-                    pos = player['position']
-                    position_counts[pos] = position_counts.get(pos, 0) + 1
-                
-                for pos, count in position_counts.items():
-                    st.metric(f"{pos}s", count)
+                display_bench_players(bench_df)
+            else:
+                st.info("No substitutes available")
             
-            # Formation visualization
             st.markdown("---")
-            st.markdown("### ⚽ Formation Breakdown")
             
-            formation_col1, formation_col2, formation_col3, formation_col4 = st.columns(4)
+            # Squad Summary
+            st.markdown("### 📊 Squad Summary")
             
-            # Group players by position for formation display
-            formation_players = {
-                'Goalkeeper': [p for p in starting_xi if p['position'] == 'Goalkeeper'],
-                'Defender': [p for p in starting_xi if p['position'] == 'Defender'],
-                'Midfielder': [p for p in starting_xi if p['position'] == 'Midfielder'],
-                'Forward': [p for p in starting_xi if p['position'] == 'Forward']
-            }
+            sum_col1, sum_col2, sum_col3, sum_col4 = st.columns(4)
             
-            with formation_col1:
-                st.markdown("#### 🥅 GK")
-                for player in formation_players['Goalkeeper']:
-                    role = '👑' if player[points_col] == starting_xi[0][points_col] else '🎖️' if len(starting_xi) > 1 and player[points_col] == starting_xi[1][points_col] else ''
-                    st.write(f"{role} {player.get('web_name', 'Unknown')}")
+            position_counts = starting_xi_df['position'].value_counts().to_dict()
             
-            with formation_col2:
-                st.markdown("#### 🛡️ DEF")
-                for player in formation_players['Defender']:
-                    role = '👑' if player[points_col] == starting_xi[0][points_col] else '🎖️' if len(starting_xi) > 1 and player[points_col] == starting_xi[1][points_col] else ''
-                    st.write(f"{role} {player.get('web_name', 'Unknown')}")
-            
-            with formation_col3:
-                st.markdown("#### ⚽ MID")
-                for player in formation_players['Midfielder']:
-                    role = '👑' if player[points_col] == starting_xi[0][points_col] else '🎖️' if len(starting_xi) > 1 and player[points_col] == starting_xi[1][points_col] else ''
-                    st.write(f"{role} {player.get('web_name', 'Unknown')}")
-            
-            with formation_col4:
-                st.markdown("#### 🎯 FWD")
-                for player in formation_players['Forward']:
-                    role = '👑' if player[points_col] == starting_xi[0][points_col] else '🎖️' if len(starting_xi) > 1 and player[points_col] == starting_xi[1][points_col] else ''
-                    st.write(f"{role} {player.get('web_name', 'Unknown')}")
+            with sum_col1:
+                st.metric("🥅 Goalkeepers", position_counts.get('Goalkeeper', 0))
+            with sum_col2:
+                st.metric("🛡️ Defenders", position_counts.get('Defender', 0))
+            with sum_col3:
+                st.metric("⚽ Midfielders", position_counts.get('Midfielder', 0))
+            with sum_col4:
+                st.metric("🎯 Forwards", position_counts.get('Forward', 0))
         
         else:
             st.warning("Unable to create Dream Team.")
@@ -1198,32 +1369,16 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
             bench = df[df['multiplier'] == 0].reset_index(drop=True)
             bench.index += 1
 
+            # display starting_xi
             st.markdown("### 🟢 Starting XI")
-            st.dataframe(
-                starting_xi[
-                    ["web_name", "final_points", "is_captain", "is_vice_captain"]
-                ].rename(columns={
-                    "web_name": "Player",
-                    "final_points": "Points",
-                    "is_captain": "Captain",
-                    "is_vice_captain": "Vice Captain"
-                }),
-                use_container_width=True
-            )
+            display_team_on_pitch(starting_xi)
 
+            # display bench
             st.markdown("### 🟡 Bench")
             if bench.empty:
                 st.info("Bench Boost chip activated! No players on the bench.")
             else:
-                st.dataframe(
-                    bench[
-                        ["web_name", "final_points"]
-                    ].rename(columns={
-                        "web_name": "Player",
-                        "final_points": "Points"
-                    }),
-                    use_container_width=True
-                )
+                display_bench_players(bench)
 
             total_points = starting_xi["final_points"].sum() - liveStatsPipeline.team_entry_history['event_transfers_cost'].iloc[0]
             st.metric(
@@ -1328,32 +1483,14 @@ elif st.session_state.active_tab == "🏆 FPL Top 10 Managers 2025/2026":
 
     # display starting_xi
     st.markdown("### 🟢 Starting XI")
-    st.dataframe(
-        starting_xi[
-            ["web_name", "final_points", "is_captain", "is_vice_captain"]
-        ].rename(columns={
-            "web_name": "Player",
-            "final_points": "Points",
-            "is_captain": "Captain",
-            "is_vice_captain": "Vice Captain"
-        }),
-        use_container_width=True
-    )
+    display_team_on_pitch(starting_xi)
+
     # display bench
     st.markdown("### 🟡 Bench")
     if bench.empty:
         st.info("Bench Boost chip activated! No players on the bench.")
     else:
-        st.dataframe(
-            bench[
-                ["web_name", "final_points"]
-            ].rename(columns={
-                "web_name": "Player",
-                "final_points": "Points"
-            }),
-            use_container_width=True
-        )
-
+        display_bench_players(bench)
     entry_history = dl_loader.load_data_api(url,'entry_history')
     total_points = starting_xi["final_points"].sum() - entry_history['event_transfers_cost'].iloc[0]
     st.metric(
@@ -1400,31 +1537,14 @@ elif st.session_state.active_tab == "💎 FPL Elite Managers":
     
     # display starting_xi
     st.markdown("### 🟢 Starting XI")
-    st.dataframe(
-        starting_xi[
-            ["web_name", "final_points", "is_captain", "is_vice_captain"]
-        ].rename(columns={
-            "web_name": "Player",
-            "final_points": "Points",
-            "is_captain": "Captain",
-            "is_vice_captain": "Vice Captain"
-        }),
-        use_container_width=True
-    )
+    display_team_on_pitch(starting_xi)
+
     # display bench
     st.markdown("### 🟡 Bench")
     if bench.empty:
         st.info("Bench Boost chip activated! No players on the bench.")
     else:
-        st.dataframe(
-            bench[
-                ["web_name", "final_points"]
-            ].rename(columns={
-                "web_name": "Player",
-                "final_points": "Points"
-            }),
-            use_container_width=True
-        )
+        display_bench_players(bench)
 
     entry_history = dl_loader.load_data_api(url,'entry_history')
     total_points = starting_xi["final_points"].sum() - entry_history['event_transfers_cost'].iloc[0]
