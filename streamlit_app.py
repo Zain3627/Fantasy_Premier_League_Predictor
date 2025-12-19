@@ -1132,7 +1132,7 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
             team_name = summary["player_name"]
             nationality = summary["nationality"]
             overall_points = summary["overall_points"]
-            event_points = summary["event_points"]
+            event_points = summary["event_points"] - liveStatsPipeline.team_entry_history['event_transfers_cost'].iloc[0]
             rank = summary["rank"]
             event_rank = summary["event_rank"]
 
@@ -1185,15 +1185,16 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
             col2.metric("Money in Bank", f"£{money_in_bank:.1f}M")
 
             df = liveStatsPipeline.team_picks.copy()
+            
             # Double points for captain
             df["final_points"] = df["event_points"]
-            df.loc[df["is_captain"], "final_points"] *= 2
+            df.loc[df['multiplier'] != 1, "final_points"] = df["event_points"] * df['multiplier']
 
-            # Split squad
-            starting_xi = df.iloc[:11].reset_index(drop=True)
+            # Split squad based on multiplier
+            starting_xi = df[df['multiplier'] > 0].reset_index(drop=True)
             starting_xi.index += 1
 
-            bench = df.iloc[11:].reset_index(drop=True)
+            bench = df[df['multiplier'] == 0].reset_index(drop=True)
             bench.index += 1
 
             st.markdown("### 🟢 Starting XI")
@@ -1210,17 +1211,20 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
             )
 
             st.markdown("### 🟡 Bench")
-            st.dataframe(
-                bench[
-                    ["web_name", "final_points"]
-                ].rename(columns={
-                    "web_name": "Player",
-                    "final_points": "Points"
-                }),
-                use_container_width=True
-            )
+            if bench.empty:
+                st.info("Bench Boost chip activated! No players on the bench.")
+            else:
+                st.dataframe(
+                    bench[
+                        ["web_name", "final_points"]
+                    ].rename(columns={
+                        "web_name": "Player",
+                        "final_points": "Points"
+                    }),
+                    use_container_width=True
+                )
 
-            total_points = starting_xi["final_points"].sum()
+            total_points = starting_xi["final_points"].sum() - liveStatsPipeline.team_entry_history['event_transfers_cost'].iloc[0]
             st.metric(
                 label="🏆 Total Team Points (Starting XI)",
                 value=int(total_points)
