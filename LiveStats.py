@@ -25,10 +25,25 @@ class LiveStats:
         bench.index += 1
         return starting_xi, bench
     
+    def load_top_players(self, n=10):
+        url = "https://fantasy.premierleague.com/api/leagues-classic/314/standings/"
+        overall_standings = self.loader.load_data_api(url, 'standings')
+        overall_standings = overall_standings['results'].iloc[0]
+        
+        # Extract top n players
+        top_10_players = [{"id": player["entry"], "name": player["player_name"]} for player in overall_standings[:n]]
+        
+        # Create a list of names
+        names = [player["name"] for player in top_10_players]
+        
+        # Create a dictionary of name-id pairs
+        name_id_dict = {player["name"]: player["id"] for player in top_10_players}
+        
+        return names, name_id_dict
+    
     def run(self, team_id):
         deadlines = self.loader.load_data_api('https://fantasy.premierleague.com/api/bootstrap-static/','events')
         self.finished_gw = self.preprocessor.get_current_gw(deadlines) - 1
-
         # get team picks for the last finished gw
         url1 = f"https://fantasy.premierleague.com/api/entry/{team_id}/"
         url2 = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{self.finished_gw}/picks/"

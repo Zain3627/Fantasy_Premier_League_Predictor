@@ -309,7 +309,7 @@ st.markdown('<p class="subtitle">Your vision into Fantasy Premier League perform
 
 # Main navigation with session state to remember active tab
 tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team", "📊 Live Team Analysis",
-             "FPL Top 10 Managers 2025/2026", "🏆 FPL Elite Managers"]
+             "🏆 FPL Top 10 Managers 2025/2026", "💎 FPL Elite Managers"]
 
 # Use st.radio to control the active tab, and store it in session state
 st.session_state.active_tab = st.radio(
@@ -1305,23 +1305,9 @@ elif st.session_state.active_tab == "🏆 FPL Top 10 Managers 2025/2026":
     dl_loader = dl.DataLoader()
     live_stats_pipeline = ls.LiveStats(dl_loader, dp.DataPreprocessing())
     url = "https://fantasy.premierleague.com/api/leagues-classic/314/standings/"
-
-    elite_managers = ["Ben Crellin", "Mark Hurst", "Hinoto Achumi", "John Walsh", "-Calm -",
-                      "Niklas Nylander", "Jamie Nettleship", "Tom Dollimore", "Tommy Shinton", "Leo Wright"]
-    managers_ids = {
-        "Ben Crellin": 6586,
-        "Mark Hurst": 62110,
-        "Hinoto Achumi": 28321,
-        "John Walsh": 1277598,
-        "-Calm -": 18383,
-        "Niklas Nylander": 649505,
-        "Jamie Nettleship": 215622,
-        "Tom Dollimore": 497000,
-        "Tommy Shinton": 155602,
-        "Leo Wright": 30222
-    }
-    # Dropdown to select a user
-    selected_user = st.selectbox("Choose a user:", elite_managers)
+    top_managers, managers_id = live_stats_pipeline.load_top_players()
+    top_managers_with_rank = [f"{i + 1}. {manager}" for i, manager in enumerate(top_managers)]
+    selected_user = st.selectbox("Choose a user:", top_managers_with_rank)
 
     # Input for gameweek
     selected_gw = st.number_input(
@@ -1335,7 +1321,8 @@ elif st.session_state.active_tab == "🏆 FPL Top 10 Managers 2025/2026":
     # Display the selected user and gameweek
     st.markdown(f"### Selected User: {selected_user}")
     st.markdown(f"### Selected Gameweek: GW {selected_gw}")
-    url = f"https://fantasy.premierleague.com/api/entry/{managers_ids[selected_user]}/event/{selected_gw}/picks/"
+    manager_name = selected_user.split(". ", 1)[1]  
+    url = f"https://fantasy.premierleague.com/api/entry/{managers_id[manager_name]}/event/{selected_gw}/picks/"
     starting_xi, bench = live_stats_pipeline.get_team_info(url)
     
 
@@ -1374,8 +1361,8 @@ elif st.session_state.active_tab == "🏆 FPL Top 10 Managers 2025/2026":
         value=int(total_points)
     )
 
-elif st.session_state.active_tab == "🏆 FPL Elite Managers":
-    st.markdown("## 🏆 FPL Elite Managers")
+elif st.session_state.active_tab == "💎 FPL Elite Managers":
+    st.markdown("## 💎 FPL Elite Managers")
     dl_loader = dl.DataLoader()
     live_stats_pipeline = ls.LiveStats(dl_loader, dp.DataPreprocessing())
 
