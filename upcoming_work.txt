@@ -1,1 +1,2 @@
 - Start from new GW and record live price changes
+- for elite and top managers. Load points correctly for previous GWs
