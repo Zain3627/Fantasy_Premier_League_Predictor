@@ -99,7 +99,7 @@ def display_team_on_pitch(df):
                        line=dict(color='white', width=2)),
             text=f"<b>{player['name']}</b><br>{player['points']} pts",
             textposition="bottom center",
-            textfont=dict(size=16, color='white', family='Arial Black'),
+            textfont=dict(size=10, color='white', family='Arial Black'),
             hovertemplate=f"<b>{player['name']}</b><br>Position: {player['position']}<br>" +
                          f"Points: {player['points']}<br>Captain: {'✓' if player['is_captain'] else '✗'}<br>" +
                          f"Vice Captain: {'✓' if player['is_vice_captain'] else '✗'}<extra></extra>",
@@ -115,14 +115,15 @@ def display_team_on_pitch(df):
         ),
         plot_bgcolor='rgba(34, 139, 34, 0.8)',
         paper_bgcolor='rgba(20, 20, 20, 0.9)',
-        xaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, zeroline=False),
+        xaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, zeroline=False,
+                  fixedrange=True),
         yaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, 
-                  zeroline=False, scaleanchor="x", scaleratio=1),
+                  zeroline=False, scaleanchor="x", scaleratio=1, fixedrange=True),
         height=700, hovermode='closest',
         margin=dict(l=20, r=20, t=70, b=20)
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'staticPlot': True})
     
     # Display dataframe
     st.dataframe(
@@ -136,7 +137,7 @@ def display_team_on_pitch(df):
         ),
         use_container_width=True
     )
-
+    
 
 def display_bench_players(df):
     """
