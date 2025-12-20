@@ -513,6 +513,11 @@ st.session_state.active_tab = st.radio(
 
 # Sidebar for information
 with st.sidebar:
+     # Disclaimer about feature availability
+    st.warning("""
+    ⚠️ Some features may be temporarily unavailable while the official FPL data is being updated. Please check back later if you encounter missing data or functionality.
+    """)
+
     st.markdown("### 📊 About")
     st.info("""
     This tool uses machine learning to predict Fantasy Premier League player performance based on:
@@ -532,11 +537,6 @@ with st.sidebar:
     6. **Live Team Analysis**: Analyze your Fantasy Premier League team's live performance.
     7. **FPL Top 10 Managers**: Explore the top-performing managers in the league.
     8. **FPL Elite Managers**: View insights into all-time elite managers' teams and strategies.
-    """)
- 
-    # Disclaimer about feature availability
-    st.warning("""
-    ⚠️ Some features may be temporarily unavailable while the official FPL data is being updated. Please check back later if you encounter missing data or functionality.
     """)
  
     # Current gameweek info
