@@ -18,126 +18,127 @@ st.set_page_config(
 
 def display_team_on_pitch(df):
     """
-    Display team players on a football pitch visualization based on element_type.
-    element_type: 1=GK, 2=DEF, 3=MID, 4=FWD
+    Responsive football pitch with player names & points in dark semi-transparent boxes
+    Spacing between marker and box scales with marker size.
     """
-    
-    # Group players by position
-    gk = df[df['element_type'] == 1]
-    defenders = df[df['element_type'] == 2]
-    midfielders = df[df['element_type'] == 3]
-    forwards = df[df['element_type'] == 4]
-    
-    num_def, num_mid, num_fwd = len(defenders), len(midfielders), len(forwards)
-    team_size = len(df)
-    bench_boost = " (Bench Boost)" if team_size == 15 else ""
-    
-    def get_positions(num_players, y_pos):
-        """Calculate evenly spaced positions"""
-        if num_players == 1:
-            return [(50, y_pos)]
-        spacing = 60 / (num_players - 1)
-        return [(20 + i * spacing, y_pos) for i in range(num_players)]
-    
-    # Assign positions
-    players_data = []
-    position_map = {
-        'GK': (gk, 10, 'yellow'),
-        'DEF': (defenders, 32, 'royalblue'),
-        'MID': (midfielders, 60, 'limegreen'),
-        'FWD': (forwards, 82, 'red')
-    }
-    
-    for pos_name, (group, y_pos, color) in position_map.items():
-        for idx, (_, player) in enumerate(group.iterrows()):
-            positions = get_positions(len(group), y_pos)
-            if idx < len(positions):
-                x, y = positions[idx]
-                players_data.append({
-                    'name': player.get('web_name', f'{pos_name} {idx+1}'),
-                    'points': player.get('final_points', 0),
-                    'x': x, 'y': y, 'position': pos_name,
-                    'color': color,
-                    'is_captain': player.get('is_captain', False),
-                    'is_vice_captain': player.get('is_vice_captain', False)
-                })
-    
-    # Create pitch
-    fig = go.Figure()
-    
-    # Pitch background and markings
-    fig.add_shape(type="rect", x0=0, y0=0, x1=100, y1=100,
-                 line=dict(color="white", width=3),
-                 fillcolor="rgba(34, 139, 34, 0.3)")
-    
-    # Pitch lines
-    shapes = [
-        dict(type="circle", x0=40, y0=40, x1=60, y1=60),  # Center circle
-        dict(type="line", x0=0, y0=50, x1=100, y1=50),    # Center line
-        dict(type="rect", x0=30, y0=0, x1=70, y1=15),     # Penalty box bottom
-        dict(type="rect", x0=30, y0=85, x1=70, y1=100),   # Penalty box top
-        dict(type="rect", x0=40, y0=0, x1=60, y1=7),      # Goal area bottom
-        dict(type="rect", x0=40, y0=93, x1=60, y1=100)    # Goal area top
+
+    import plotly.graph_objects as go
+    import streamlit as st
+
+    # --- Group players ---
+    gk = df[df["element_type"] == 1]
+    defs = df[df["element_type"] == 2]
+    mids = df[df["element_type"] == 3]
+    fwds = df[df["element_type"] == 4]
+
+    num_def, num_mid, num_fwd = len(defs), len(mids), len(fwds)
+    bench_boost = " (Bench Boost)" if len(df) == 15 else ""
+
+    # --- Position helper ---
+    def get_x_positions(n):
+        if n == 1:
+            return [50]
+        spacing = 70 / (n - 1)
+        return [15 + i * spacing for i in range(n)]
+
+    lines = [
+        ("GK", gk, 8, "gold"),
+        ("DEF", defs, 30, "royalblue"),
+        ("MID", mids, 58, "limegreen"),
+        ("FWD", fwds, 82, "red")
     ]
-    
-    for shape in shapes:
-        fig.add_shape(**shape, line=dict(color="white", width=2))
-    
-    # Add players
-    for player in players_data:
-        if player['is_captain']:
-            color, size, symbol = 'gold', 28, 'star'
-        elif player['is_vice_captain']:
-            color, size, symbol = 'silver', 26, 'star'
-        else:
-            color, size, symbol = player['color'], 22, 'circle'
-        
-        fig.add_trace(go.Scatter(
-            x=[player['x']], y=[player['y']],
-            mode='markers+text',
-            marker=dict(size=size, color=color, symbol=symbol,
-                       line=dict(color='white', width=2)),
-            text=f"<b>{player['name']}</b><br>{player['points']} pts",
-            textposition="bottom center",
-            textfont=dict(size=10, color='white', family='Arial Black'),
-            hovertemplate=f"<b>{player['name']}</b><br>Position: {player['position']}<br>" +
-                         f"Points: {player['points']}<br>Captain: {'✓' if player['is_captain'] else '✗'}<br>" +
-                         f"Vice Captain: {'✓' if player['is_vice_captain'] else '✗'}<extra></extra>",
-            showlegend=False
-        ))
-    
-    # Layout
-    fig.update_layout(
-        title=dict(
-            text=f"<b>{num_def}-{num_mid}-{num_fwd} Formation{bench_boost}</b>",
-            font=dict(size=26, color='white', family='Arial Black'),
-            x=0.5, xanchor='center'
-        ),
-        plot_bgcolor='rgba(34, 139, 34, 0.8)',
-        paper_bgcolor='rgba(20, 20, 20, 0.9)',
-        xaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, zeroline=False,
-                  fixedrange=True),
-        yaxis=dict(range=[-5, 105], showgrid=False, showticklabels=False, 
-                  zeroline=False, scaleanchor="x", scaleratio=1, fixedrange=True),
-        height=700, hovermode='closest',
-        margin=dict(l=20, r=20, t=70, b=20)
+
+    fig = go.Figure()
+
+    # --- Pitch ---
+    fig.add_shape(
+        type="rect", x0=0, y0=0, x1=100, y1=100,
+        fillcolor="rgba(34,139,34,0.35)",
+        line=dict(color="white", width=2),
+        layer="below"
     )
-    
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'staticPlot': True})
-    
-    # Display dataframe
-    st.dataframe(
-        df[["web_name", "final_points", "is_captain", "is_vice_captain"]].rename(
-            columns={
-                "web_name": "Player",
-                "final_points": "Points",
-                "is_captain": "Captain",
-                "is_vice_captain": "Vice Captain"
-            }
+
+    pitch_shapes = [
+        dict(type="circle", x0=40, y0=40, x1=60, y1=60),
+        dict(type="line", x0=0, y0=50, x1=100, y1=50),
+        dict(type="rect", x0=30, y0=0, x1=70, y1=15),
+        dict(type="rect", x0=30, y0=85, x1=70, y1=100),
+    ]
+    for s in pitch_shapes:
+        fig.add_shape(**s, line=dict(color="white", width=2), layer="below")
+
+    # --- Players ---
+    for _, group, y, base_color in lines:
+        xs = get_x_positions(len(group))
+        for i, (_, p) in enumerate(group.iterrows()):
+            size, symbol, color = 20, "circle", base_color
+            if p["is_captain"]:
+                size, symbol, color = 26, "star", "gold"
+            elif p["is_vice_captain"]:
+                size, symbol, color = 24, "star", "silver"
+
+            # Marker for player
+            fig.add_trace(go.Scatter(
+                x=[xs[i]], y=[y],
+                mode="markers",
+                marker=dict(size=size, color=color, symbol=symbol,
+                            line=dict(color="white", width=2)),
+                hovertemplate=(
+                    f"<b>{p['web_name']}</b><br>"
+                    f"Points: {p['final_points']}<br>"
+                    f"Captain: {'✓' if p['is_captain'] else '✗'}<br>"
+                    f"Vice Captain: {'✓' if p['is_vice_captain'] else '✗'}"
+                    "<extra></extra>"
+                ),
+                showlegend=False
+            ))
+
+            # Annotation for name+points with dark transparent box
+            fig.add_annotation(
+                x=xs[i],
+                y=y - (size * 0.4),  # dynamic spacing based on marker size
+                text=f"<b>{p['web_name']}</b><br>{p['final_points']} pts",
+                showarrow=False,
+                font=dict(size=11, color="white", family="Arial Black"),
+                align="center",
+                bordercolor="white",
+                borderwidth=1,
+                borderpad=4,
+                bgcolor="rgba(0,0,0,0.7)"
+            )
+
+    # --- Layout ---
+    fig.update_layout(
+        autosize=True,
+        title=dict(
+            text=f"{num_def}-{num_mid}-{num_fwd} Formation{bench_boost}",
+            x=0.5,
+            font=dict(size=20, color="white")
         ),
+        margin=dict(l=10, r=10, t=50, b=10),
+        xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
+        yaxis=dict(visible=False),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={"displayModeBar": False, "staticPlot": True}
+    )
+
+    # --- Table ---
+    st.dataframe(
+        df[["web_name", "final_points", "is_captain", "is_vice_captain"]].rename(columns={
+            "web_name": "Player",
+            "final_points": "Points",
+            "is_captain": "Captain",
+            "is_vice_captain": "Vice Captain"
+        }),
         use_container_width=True
     )
-    
+
 
 def display_bench_players(df):
     """
@@ -520,11 +521,14 @@ with st.sidebar:
     
     st.markdown("### 🎯 How to use")
     st.markdown("""
-    1. Navigate through the tabs to explore different sections
-    2. Use the Predictions tab to generate player predictions
-    3. Explore Team Statistics for team performance insights
-    4. Check Player Statistics for detailed player analysis
-    5. View Dream Team for optimal squad selection
+    1. Navigate through the tabs to explore different sections:
+    2. **Predictions**: Generate player predictions for upcoming gameweeks.
+    3. **Team Statistics**: Analyze team performance, including attacking and defensive stats.
+    4. **Player Statistics**: Dive into detailed player analysis by position and key metrics.
+    5. **Dream Team**: View the optimal squad selection based on predicted points.
+    6. **Live Team Analysis**: Analyze your Fantasy Premier League team's live performance.
+    7. **FPL Top 10 Managers**: Explore the top-performing managers in the league.
+    8. **FPL Elite Managers**: View insights into all-time elite managers' teams and strategies.
     """)
     
     # Current gameweek info

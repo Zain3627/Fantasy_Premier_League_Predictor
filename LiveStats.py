@@ -48,7 +48,7 @@ class LiveStats:
         # get team picks for the last finished gw
         url1 = f"https://fantasy.premierleague.com/api/entry/{team_id}/"
         url2 = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{self.finished_gw}/picks/"
-        # url2 = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/7/picks/"
+        # url2 = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/15/picks/"
         self.info = self.loader.load_live_team(url1) 
         # print(self.info["player_name"])
 
