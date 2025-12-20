@@ -143,9 +143,7 @@ def display_bench_players(df):
     """
     Display bench players on a bench visualization.
     """
-    
     num_players = len(df)
-    
     if num_players == 0:
         st.info("No bench players")
         return
@@ -156,12 +154,12 @@ def display_bench_players(df):
     # Bench background
     fig.add_shape(type="rect", x0=0, y0=0, x1=100, y1=30,
                  line=dict(color="#8B4513", width=4),
-                 fillcolor="rgba(139, 69, 19, 0.6)")
+                 fillcolor="rgba(139, 69, 19, 0.6)", layer="below")
     
-    # Bench slats
+    # Bench slats (drawn below players)
     for i in range(0, 101, 10):
         fig.add_shape(type="line", x0=i, y0=0, x1=i, y1=30,
-                     line=dict(color="#654321", width=2))
+                     line=dict(color="#654321", width=2), layer="below")
     
     # Calculate positions for bench players
     spacing = 80 / (num_players + 1)
@@ -178,7 +176,7 @@ def display_bench_players(df):
                        line=dict(color='white', width=2)),
             text=f"<b>{player.get('web_name', f'Player {idx+1}')}</b><br>{player.get('final_points', 0)} pts",
             textposition="top center",
-            textfont=dict(size=14, color='white', family='Arial Black'),
+            textfont=dict(size=9, color='white', family='Arial Black'),
             hovertemplate=f"<b>{player.get('web_name', '')}</b><br>" +
                          f"Points: {player.get('final_points', 0)}<extra></extra>",
             showlegend=False
@@ -193,15 +191,16 @@ def display_bench_players(df):
         ),
         plot_bgcolor='rgba(60, 60, 60, 0.8)',
         paper_bgcolor='rgba(20, 20, 20, 0.9)',
-        xaxis=dict(range=[0, 100], showgrid=False, showticklabels=False, zeroline=False),
-        yaxis=dict(range=[0, 30], showgrid=False, showticklabels=False, zeroline=False),
+        xaxis=dict(range=[0, 100], showgrid=False, showticklabels=False, zeroline=False,
+                  fixedrange=True),
+        yaxis=dict(range=[0, 30], showgrid=False, showticklabels=False, zeroline=False,
+                  fixedrange=True),
         height=250, hovermode='closest',
         margin=dict(l=20, r=20, t=60, b=20)
     )
     
-    st.plotly_chart(fig, use_container_width=True)
-
-
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'staticPlot': True})
+    
 st.markdown("""
     <meta name="description" content="FPL Vision – AI-powered Fantasy Premier League predictions, player stats, and data insights for FPL managers.">
     <meta name="keywords" content="FPL, Fantasy Premier League, football predictions, player stats, data analysis, Premier League, AI predictions, machine learning, fantasy football, FPL Vision">
