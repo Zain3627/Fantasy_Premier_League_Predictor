@@ -1342,7 +1342,10 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
             col1.metric("Overall Points", overall_points)
             col2.metric("Overall Rank", f"{rank:,}")
             col3.metric(f"GW {liveStatsPipeline.finished_gw} Points", event_points)
-            col4.metric(f"GW {liveStatsPipeline.finished_gw} Rank", f"{event_rank:,}")
+            if( event_rank is None):
+                col4.metric(f"GW {liveStatsPipeline.finished_gw} Rank", "N/A")
+            else:
+                col4.metric(f"GW {liveStatsPipeline.finished_gw} Rank", f"{event_rank:,}")
 
             # Financial analysis
             squad_value = (liveStatsPipeline.team_entry_history['value']*1.0 / 10.0).iloc[0]  # Convert to proper format
