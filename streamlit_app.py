@@ -1456,6 +1456,8 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
 
             st.success("Live team loaded successfully!")
         except Exception as e:
+            print(e)
+            print(e.__traceback__.tb_lineno)
             st.error("Invalid Team ID. Please check and try again.")
 
     st.markdown("---")
@@ -1490,7 +1492,7 @@ elif st.session_state.active_tab == "🏆 FPL Top Managers 2025/2026":
     st.markdown(f"### Selected Gameweek: GW {selected_gw}")
     manager_name = selected_user.split(". ", 1)[1]  
     url = f"https://fantasy.premierleague.com/api/entry/{managers_id[manager_name]}/event/{selected_gw}/picks/"
-    starting_xi, bench = live_stats_pipeline.get_team_info(url)
+    starting_xi, bench = live_stats_pipeline.get_team_info(url,selected_gw)
     
 
     # display starting_xi
@@ -1545,7 +1547,7 @@ elif st.session_state.active_tab == "💎 FPL Elite Managers":
     st.markdown(f"### Selected User: {selected_user}")
     st.markdown(f"### Selected Gameweek: GW {selected_gw}")
     url = f"https://fantasy.premierleague.com/api/entry/{managers_ids[selected_user]}/event/{selected_gw}/picks/"
-    starting_xi, bench = live_stats_pipeline.get_team_info(url)
+    starting_xi, bench = live_stats_pipeline.get_team_info(url,selected_gw)
     
     # display starting_xi
     st.markdown("### 🟢 Starting XI")

@@ -8,11 +8,36 @@ class LiveStats:
         self.loader = loader
         self.preprocessor = preprocessor
     
-    def get_team_info(self, url):
+    def get_team_info(self, url, gw):
+        gw -= 1
+        total_players = self.loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
+        total_players= total_players[['id', 'web_name','team','selected_by_percent','transfers_in_event','transfers_out_event']]
+        
         df = self.loader.load_data_api(url,'picks')
-        players = self.loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
-        players= players[['id', 'web_name','team','event_points','selected_by_percent','transfers_in_event','transfers_out_event']]
-        df = df.merge(players, left_on='element', right_on='id', how='left')
+        player_ids = df['element'].unique().tolist()
+        player_history_data = []
+
+        for player_id in player_ids:
+            player_history_url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
+            history = self.loader.load_data_api(player_history_url, 'history')
+            print(history)
+            if 0 <= gw < len(history):
+                event_points = history.iloc[gw]['total_points']
+            else:
+                event_points = 0
+            
+            player_history_data.append({
+                'id': player_id,
+                'event_points': event_points
+            })
+
+        # Convert the collected data into a DataFrame
+        player_history_df = pd.DataFrame(player_history_data)
+        player_history_df = player_history_df.merge(total_players, on='id', how='left')
+
+        # players = self.loader.load_data_api("https://fantasy.premierleague.com/api/bootstrap-static/",'elements')
+        # players= players[['id', 'web_name','team','event_points','selected_by_percent','transfers_in_event','transfers_out_event']]
+        df = df.merge(player_history_df, left_on='element', right_on='id', how='left')
                 
         # Double points for captain
         df["final_points"] = df["event_points"]
@@ -23,7 +48,6 @@ class LiveStats:
         starting_xi.index += 1
         bench = df[df['multiplier'] == 0].reset_index(drop=True)
         bench.index += 1
-        print(starting_xi.columns)
         return starting_xi, bench
     
     def load_top_players(self, n=50):
