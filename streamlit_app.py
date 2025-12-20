@@ -534,7 +534,10 @@ with st.sidebar:
     8. **FPL Elite Managers**: View insights into all-time elite managers' teams and strategies.
     """)
  
- 
+    # Disclaimer about feature availability
+    st.warning("""
+    ⚠️ Some features may be temporarily unavailable while the official FPL data is being updated. Please check back later if you encounter missing data or functionality.
+    """)
  
     # Current gameweek info
     try:
