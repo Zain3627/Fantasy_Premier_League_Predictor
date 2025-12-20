@@ -16,15 +16,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 def display_team_on_pitch(df):
     """
-    Responsive football pitch with player names & points in dark semi-transparent boxes
-    Spacing between marker and box scales with marker size.
+    Modern football pitch with a responsive, embedded formation title.
+    Theme: Softer Green accents on dark pitch.
     """
-
-    import plotly.graph_objects as go
-    import streamlit as st
-
     # --- Group players ---
     gk = df[df["element_type"] == 1]
     defs = df[df["element_type"] == 2]
@@ -32,176 +29,182 @@ def display_team_on_pitch(df):
     fwds = df[df["element_type"] == 4]
 
     num_def, num_mid, num_fwd = len(defs), len(mids), len(fwds)
-    bench_boost = " (Bench Boost)" if len(df) == 15 else ""
+    bench_boost = " (BB)" if len(df) == 15 else "" # Shortened for mobile
 
     # --- Position helper ---
     def get_x_positions(n):
         if n == 1:
             return [50]
-        spacing = 70 / (n - 1)
-        return [15 + i * spacing for i in range(n)]
+        spacing = 75 / (n - 1)
+        return [12.5 + i * spacing for i in range(n)]
 
+    # Lines
     lines = [
-        ("GK", gk, 8, "gold"),
-        ("DEF", defs, 30, "royalblue"),
-        ("MID", mids, 58, "limegreen"),
-        ("FWD", fwds, 82, "red")
+        ("GK", gk, 10),
+        ("DEF", defs, 35),
+        ("MID", mids, 62),
+        ("FWD", fwds, 85)
     ]
 
     fig = go.Figure()
 
-    # --- Pitch ---
+    # --- Dark Pitch ---
     fig.add_shape(
         type="rect", x0=0, y0=0, x1=100, y1=100,
-        fillcolor="rgba(34,139,34,0.35)",
-        line=dict(color="white", width=2),
+        fillcolor="#12181f", 
+        line=dict(color="rgba(255,255,255,0.2)", width=2),
         layer="below"
     )
 
+    # Pitch Markings
+    pitch_line_style = dict(color="rgba(255,255,255,0.3)", width=2)
     pitch_shapes = [
-        dict(type="circle", x0=40, y0=40, x1=60, y1=60),
-        dict(type="line", x0=0, y0=50, x1=100, y1=50),
-        dict(type="rect", x0=30, y0=0, x1=70, y1=15),
-        dict(type="rect", x0=30, y0=85, x1=70, y1=100),
+        dict(type="circle", x0=40, y0=42, x1=60, y1=58), 
+        dict(type="line", x0=0, y0=50, x1=100, y1=50), 
+        dict(type="rect", x0=20, y0=0, x1=80, y1=18),   
+        dict(type="rect", x0=20, y0=82, x1=80, y1=100),  
     ]
     for s in pitch_shapes:
-        fig.add_shape(**s, line=dict(color="white", width=2), layer="below")
+        fig.add_shape(**s, line=pitch_line_style, layer="below")
+
+    # --- Formation Title ---
+    accent_green = "#2ECC71"  # Softer green
+    fig.add_annotation(
+        x=50, 
+        y=108, 
+        text=f"{num_def}-{num_mid}-{num_fwd} FORMATION{bench_boost}",
+        showarrow=False,
+        font=dict(size=20, color=accent_green, family="Arial Black"),
+        align="center",
+        bgcolor="#0E1117", 
+        bordercolor=accent_green,
+        borderwidth=1,
+        borderpad=5,
+        opacity=0.85
+    )
 
     # --- Players ---
-    for _, group, y, base_color in lines:
+    for _, group, y in lines:
         xs = get_x_positions(len(group))
         for i, (_, p) in enumerate(group.iterrows()):
-            size, symbol, color = 20, "circle", base_color
+            size, symbol, border_color = 22, "circle", accent_green
             if p["is_captain"]:
-                size, symbol, color = 26, "star", "gold"
+                size, symbol, border_color = 28, "star", "#D4AF37" # Softer gold
             elif p["is_vice_captain"]:
-                size, symbol, color = 24, "star", "silver"
+                size, symbol, border_color = 26, "star", "#B0B0B0" # Softer silver
 
-            # Marker for player
+            # Marker
             fig.add_trace(go.Scatter(
                 x=[xs[i]], y=[y],
                 mode="markers",
-                marker=dict(size=size, color=color, symbol=symbol,
-                            line=dict(color="white", width=2)),
+                marker=dict(
+                    size=size, 
+                    color='#111111', 
+                    symbol=symbol,
+                    line=dict(color=border_color, width=2.5)
+                ),
                 hovertemplate=(
                     f"<b>{p['web_name']}</b><br>"
                     f"Points: {p['final_points']}<br>"
-                    f"Captain: {'✓' if p['is_captain'] else '✗'}<br>"
-                    f"Vice Captain: {'✓' if p['is_vice_captain'] else '✗'}"
                     "<extra></extra>"
                 ),
                 showlegend=False
             ))
 
-            # Annotation for name+points with dark transparent box
+            # Name tag with softer green
             fig.add_annotation(
                 x=xs[i],
-                y=y - (size * 0.4),  # dynamic spacing based on marker size
-                text=f"<b>{p['web_name']}</b><br>{p['final_points']} pts",
+                y=y - 7, 
+                text=f"<b>{p['web_name']}</b><br><span style='color:{accent_green}'>{p['final_points']} PTS</span>",
                 showarrow=False,
-                font=dict(size=11, color="white", family="Arial Black"),
+                font=dict(size=10, color="white", family="Inter, Arial Black"),
                 align="center",
-                bordercolor="white",
+                bgcolor="rgba(10, 10, 10, 0.85)",
+                bordercolor="rgba(255,255,255,0.1)",
                 borderwidth=1,
-                borderpad=4,
-                bgcolor="rgba(0,0,0,0.7)"
+                borderpad=4
             )
 
     # --- Layout ---
     fig.update_layout(
         autosize=True,
-        title=dict(
-            text=f"{num_def}-{num_mid}-{num_fwd} Formation{bench_boost}",
-            x=0.5,
-            font=dict(size=20, color="white")
-        ),
-        margin=dict(l=10, r=10, t=50, b=10),
-        xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
-        yaxis=dict(visible=False),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)"
+        margin=dict(l=0, r=0, t=10, b=0), 
+        xaxis=dict(visible=False, range=[0, 100], fixedrange=True),
+        yaxis=dict(visible=False, range=[-5, 115], fixedrange=True),
+        paper_bgcolor="#0E1117", 
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=600,
+        dragmode=False 
     )
 
     st.plotly_chart(
         fig,
         use_container_width=True,
-        config={"displayModeBar": False, "staticPlot": True}
+        config={"displayModeBar": False}
     )
-
-    # --- Table ---
-    st.dataframe(
-        df[["web_name", "final_points", "is_captain", "is_vice_captain"]].rename(columns={
-            "web_name": "Player",
-            "final_points": "Points",
-            "is_captain": "Captain",
-            "is_vice_captain": "Vice Captain"
-        }),
-        use_container_width=True
-    )
-
 
 def display_bench_players(df):
     """
-    Display bench players on a bench visualization.
+    Display bench players with less metallic yellow accents.
     """
     num_players = len(df)
     if num_players == 0:
-        st.info("No bench players")
+        st.info("No bench players currently on the squad.")
         return
     
-    # Create bench visualization
     fig = go.Figure()
     
-    # Bench background
-    fig.add_shape(type="rect", x0=0, y0=0, x1=100, y1=30,
-                 line=dict(color="#8B4513", width=4),
-                 fillcolor="rgba(139, 69, 19, 0.6)", layer="below")
+    # Softer Yellow Accent
+    accent_yellow = "#FFC300"      # Softer yellow
+    accent_yellow_fill = "rgba(255, 195, 0, 0.15)" # Low opacity
+
+    # Bench Container
+    fig.add_shape(
+        type="rect", x0=2, y0=2, x1=98, y1=28,
+        line=dict(color=accent_yellow, width=2),
+        fillcolor=accent_yellow_fill,
+        layer="below"
+    )
     
-    # Bench slats (drawn below players)
-    for i in range(0, 101, 10):
-        fig.add_shape(type="line", x0=i, y0=0, x1=i, y1=30,
-                     line=dict(color="#654321", width=2), layer="below")
+    spacing = 90 / (num_players + 1)
     
-    # Calculate positions for bench players
-    spacing = 80 / (num_players + 1)
-    
-    # Add bench players
     for idx, (_, player) in enumerate(df.iterrows()):
-        x = 10 + (idx + 1) * spacing
-        y = 15
+        x = 5 + (idx + 1) * spacing
+        y = 12
         
         fig.add_trace(go.Scatter(
             x=[x], y=[y],
             mode='markers+text',
-            marker=dict(size=24, color='gray', symbol='circle',
-                       line=dict(color='white', width=2)),
-            text=f"<b>{player.get('web_name', f'Player {idx+1}')}</b><br>{player.get('final_points', 0)} pts",
+            marker=dict(
+                size=35,
+                color='#111111',
+                symbol='circle',
+                line=dict(color=accent_yellow, width=2) # Less metallic
+            ),
+            text=[f"<b>{player.get('web_name', 'N/A')}</b><br><span style='color:{accent_yellow}'>{player.get('final_points', 0)} PTS</span>"],
             textposition="top center",
-            textfont=dict(size=9, color='white', family='Arial Black'),
-            hovertemplate=f"<b>{player.get('web_name', '')}</b><br>" +
-                         f"Points: {player.get('final_points', 0)}<extra></extra>",
+            textfont=dict(size=11, color='white', family='Inter, Arial'),
+            hovertemplate=(
+                f"<b>{player.get('web_name', 'Player')}</b><br>"
+                f"Total: {player.get('final_points', 0)} pts<extra></extra>"
+            ),
             showlegend=False
         ))
     
-    # Layout
     fig.update_layout(
-        title=dict(
-            text=f"<b>Bench ({num_players} Players)</b>",
-            font=dict(size=22, color='white', family='Arial Black'),
-            x=0.5, xanchor='center'
-        ),
-        plot_bgcolor='rgba(60, 60, 60, 0.8)',
-        paper_bgcolor='rgba(20, 20, 20, 0.9)',
-        xaxis=dict(range=[0, 100], showgrid=False, showticklabels=False, zeroline=False,
-                  fixedrange=True),
-        yaxis=dict(range=[0, 30], showgrid=False, showticklabels=False, zeroline=False,
-                  fixedrange=True),
-        height=250, hovermode='closest',
-        margin=dict(l=20, r=20, t=60, b=20)
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='#0E1117',
+        xaxis=dict(range=[0, 100], showgrid=False, showticklabels=False, zeroline=False, fixedrange=True),
+        yaxis=dict(range=[0, 35], showgrid=False, showticklabels=False, zeroline=False, fixedrange=True),
+        height=220,
+        margin=dict(l=10, r=10, t=50, b=10),
+        hoverlabel=dict(bgcolor="#111111", font_size=12, font_family="Arial")
     )
     
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'staticPlot': True})
-    
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+
+
 st.markdown("""
     <meta name="description" content="FPL Vision – AI-powered Fantasy Premier League predictions, player stats, and data insights for FPL managers.">
     <meta name="keywords" content="FPL, Fantasy Premier League, football predictions, player stats, data analysis, Premier League, AI predictions, machine learning, fantasy football, FPL Vision">
@@ -496,7 +499,7 @@ st.markdown('<p class="subtitle">Your vision into Fantasy Premier League perform
 
 # Main navigation with session state to remember active tab
 tab_names = ["🎯 Predictions", "🏟️ Team Statistics", "👤 Player Statistics", "⭐ Dream Team", "📊 Live Team Analysis",
-             "🏆 FPL Top 10 Managers 2025/2026", "💎 FPL Elite Managers"]
+             "🏆 FPL Top Managers 2025/2026", "💎 FPL Elite Managers"]
 
 # Use st.radio to control the active tab, and store it in session state
 st.session_state.active_tab = st.radio(
@@ -530,7 +533,9 @@ with st.sidebar:
     7. **FPL Top 10 Managers**: Explore the top-performing managers in the league.
     8. **FPL Elite Managers**: View insights into all-time elite managers' teams and strategies.
     """)
-    
+ 
+ 
+ 
     # Current gameweek info
     try:
         loader = dl.DataLoader()
@@ -1459,8 +1464,8 @@ elif st.session_state.active_tab == "📊 Live Team Analysis":
     4. Enter your Team ID above to analyze your team's performance.
     """)
 
-elif st.session_state.active_tab == "🏆 FPL Top 10 Managers 2025/2026":
-    st.markdown("## 🏆 FPL Top 10 Managers 2025/2026")
+elif st.session_state.active_tab == "🏆 FPL Top Managers 2025/2026":
+    st.markdown("## 🏆 FPL Top Managers 2025/2026")
     dl_loader = dl.DataLoader()
     live_stats_pipeline = ls.LiveStats(dl_loader, dp.DataPreprocessing())
     url = "https://fantasy.premierleague.com/api/leagues-classic/314/standings/"

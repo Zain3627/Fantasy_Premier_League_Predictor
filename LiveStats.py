@@ -26,7 +26,7 @@ class LiveStats:
         print(starting_xi.columns)
         return starting_xi, bench
     
-    def load_top_players(self, n=10):
+    def load_top_players(self, n=50):
         url = "https://fantasy.premierleague.com/api/leagues-classic/314/standings/"
         overall_standings = self.loader.load_data_api(url, 'standings')
         overall_standings = overall_standings['results'].iloc[0]
