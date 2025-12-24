@@ -5,10 +5,31 @@ class DataPreprocessing:
     def __init__(self):
         pass
     
-    def fixtures_processing(self,df):
-        cols = ['finished_provisional','kickoff_time','minutes','provisional_start_time','started','team_a_score','team_h_score']
-        df = df.drop(columns=cols)
+    import pandas as pd
+
+    def fixtures_processing(self, fixtures):
+
+        if isinstance(fixtures, dict):
+            if 'fixtures' in fixtures:
+                fixtures = fixtures['fixtures']
+            else:
+                fixtures = next(v for v in fixtures.values() if isinstance(v, list))
+
+        # Now fixtures is a list of dicts
+        df = pd.DataFrame.from_records(fixtures)
+        cols_to_drop = [
+            'finished_provisional',
+            'kickoff_time',
+            'minutes',
+            'provisional_start_time',
+            'started',
+            'team_a_score',
+            'team_h_score'
+        ]
+
+        df = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
         return df
+
 
     def get_current_gw(self,df):
         df['deadline_time'] = pd.to_datetime(df['deadline_time'], utc=True)

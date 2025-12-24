@@ -545,7 +545,7 @@ with st.sidebar:
         deadlines = loader.load_data_api('https://fantasy.premierleague.com/api/bootstrap-static/','events')
         finished_gw = dp.DataPreprocessing().get_current_gw(deadlines) - 1
         st.markdown(f"### 📅 Current Status")
-        st.success(f"Latest GW data update: **{16}**")
+        st.success(f"Latest GW data update: **{17}**")
     except:
         finished_gw = 10
         st.warning("Could not fetch current gameweek")

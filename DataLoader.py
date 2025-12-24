@@ -65,7 +65,7 @@ class DataLoader:
         if section != None:
             df = data[section]
         else:
-            df = pd.DataFrame([data])
+            df = pd.DataFrame(data)
 
         if isinstance(df, list):
             return pd.DataFrame(df)
